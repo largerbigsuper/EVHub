@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+gunicorn
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pydantic
+pydantic-settings
+redis
+python-jose[cryptography]
+bcrypt
+python-multipart
+celery
+httpx
+pytest
+pytest-asyncio
