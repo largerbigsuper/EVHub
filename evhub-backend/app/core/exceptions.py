@@ -28,3 +28,8 @@ class DuplicateError(AppException):
 class ValidationError(AppException):
     def __init__(self, message: str = "参数校验失败"):
         super().__init__(422, message, 422)
+
+
+class BadRequestError(AppException):
+    def __init__(self, message: str = "请求参数错误"):
+        super().__init__(400, message, 400)

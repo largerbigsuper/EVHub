@@ -1,1 +1,1 @@
-from app.models import base, user, audit_log, brand, vehicle_series, vehicle_sku, attribute
+from app.models import base, user, audit_log, brand, vehicle_series, vehicle_sku, attribute, article, mod_build, community, search

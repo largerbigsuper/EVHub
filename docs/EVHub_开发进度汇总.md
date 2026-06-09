@@ -59,7 +59,7 @@
 
 ## 模块 2：品牌与车型管理 🟡
 
-### 2-A 后端品牌车型 API
+### 2-A 后端品牌车型 API ✅
 - 6 个 ORM 模型：Brand / VehicleSeries / VehicleSku / AttributeGroup / AttributeDefinition / VehicleAttributeValue
 - 三级数据体系：品牌 → 车系 → SKU
 - 动态属性系统：属性组 + 属性定义（支持 number/text/boolean 三种值类型）+ SKU 属性值
@@ -74,3 +74,135 @@
   - 品牌 CRUD / 车系 CRUD / SKU CRUD + 属性批量设置
   - 属性组 CRUD / 属性定义 CRUD
 - 所有写操作写入审计日志
+
+### 2-B 后台车型数据管理 ✅
+- 8 个页面文件：
+  - `/admin/vehicles` 品牌总览页（品牌卡片网格 + 快捷入口）
+  - `/admin/vehicles/brands` 品牌管理列表（表格+CRUD弹窗）
+  - `/admin/vehicles/brands/[id]` 品牌编辑页（表单+车系列表侧栏）
+  - `/admin/vehicles/series` 车系管理列表（并发获取全部车系）
+  - `/admin/vehicles/skus` SKU 管理列表（筛选：品牌/电池/续航/驾照 + 分页）
+  - `/admin/vehicles/skus/[id]` SKU 编辑页（4 Tab：基础信息/核心参数/动态属性/颜色标签）
+  - `/admin/vehicles/skus/new` 新增 SKU（自动跳转编辑页）
+  - `/admin/vehicles/attributes` 属性定义管理（属性组展开/折叠 + 属性定义CRUD弹窗）
+- 动态属性：按 value_type（text/number/boolean）展示对应输入控件
+- 品牌/车系/SKU 三级级联选择
+- 颜色和标签支持输入+回车添加，可删除
+
+---
+
+## 模块 2-C：品牌车型前端 ✅
+
+- 5 个公开页面 + 1 个客户端组件：
+  - `/brands` 品牌列表页（SSG, revalidate=1h）：推荐品牌置顶 + 按国家/字母搜索筛选
+  - `/brands/[slug]` 品牌详情页（SSR）：品牌介绍 + 车系网格 + generateMetadata SEO
+  - `/vehicles` 车型筛选页（SSR）：左侧筛选面板(品牌/电池/价格/续航/驾照/排序) + URL参数同步 + 骨架屏
+  - `/vehicles/[slug]` 车型详情页（SSR）：核心参数卡片 + 动态属性表格 + 颜色/标签展示 + 收藏按钮 + 同品牌推荐 + JSON-LD Product Schema + generateMetadata+OpenGraph
+  - `/compare` 车型对比页（CSR）：搜索添加车型(最多4款) + 属性矩阵对比 + 差异项高亮
+- 架构调整：admin 路由统一加 `/admin` 前缀（`(admin)/admin/...`），与 public 路由无冲突
+- 全部 SSR/SSG 页面使用 `fetch()` 直接调用后端 API（不依赖 axios）
+
+---
+
+## 模块 3：内容管理
+
+### 3-A 后端文章 API ✅
+
+- 2 个 ORM 模型：`categories`（二级分类，parent_id 自关联）+ `articles`（含 SEO 字段、JSONB tags）
+- 公开接口（3 个）：
+  - `GET /articles` 文章列表（category_slug/tag/keyword 筛选 + 分页）
+  - `GET /articles/{slug}` 文章详情（Redis INCR 浏览量）
+  - `GET /articles/categories` 分类树（含子分类嵌套）
+- 管理接口（12 个）：
+  - 文章 CRUD + 状态流转（submit/publish/reject）+ 待审核列表 + 软删除
+  - 分类 CRUD
+- 文章工作流：draft → pending(提交审核) → published(发布) / rejected(拒绝，填写原因)
+- 浏览量：Redis INCR 实时计数，Celery Beat 每 5 分钟批量落库
+- Celery 基础设施：celery_app.py + article_tasks.py（sync_article_view_counts）
+
+### 3-B 内容管理后台 ✅
+
+- 4 个管理页面：
+  - `/admin/content` 文章列表（5 个 Tab：全部/草稿/待审核/已发布/已拒绝）+ 待审核角标 + 内联审核操作（通过/拒绝弹窗）+ 分页
+  - `/admin/content/articles/new` 新建文章（@uiw/react-md-editor 编辑器 + 右侧发布设置/SEO 面板 + 30s 自动保存草稿）
+  - `/admin/content/articles/[id]/edit` 编辑文章（加载已有数据 + 保存/提交审核/发布三按钮）
+  - `/admin/content/categories` 分类树形管理（增删改 + 二级限制 + 父分类选择器）
+- 新增依赖：@uiw/react-md-editor、react-hook-form、zod、@hookform/resolvers
+
+### 3-C 文章展示前端 ✅
+
+- 3 个页面 + 1 个 Client 组件：
+  - `/` 首页重写：Hero 区 + 推荐品牌(is_featured) + 热门文章(view_count排序) + 最新文章 + 底部CTA
+  - `/articles` 文章列表（SSR）：分类横向 Tab + 12篇/页分页 + URL参数同步(category/tag/page) + 卡片含封面/分类标签/日期/阅读量
+  - `/articles/[slug]` 文章详情（SSR）：react-markdown + remarkGfm + rehypeHighlight + rehypeSlug + TOC滚动高亮 + JSON-LD Article Schema + generateMetadata(OGP) + 复制链接分享
+  - `ArticleClient.tsx`：客户端交互组件（TOC IntersectionObserver + 复制链接按钮）
+- 新增依赖：react-markdown、rehype-highlight、rehype-slug、remark-gfm
+
+---
+
+## 模块 4：改装中心
+
+### 4-A 后端改装 API ✅
+
+- 2 个 ORM 模型：`mod_builds`（方案）+ `mod_parts`（配件清单，一对多，cascade delete-orphan）
+- 公开接口（2 个）：
+  - `GET /mod/builds` 方案列表（vehicle_sku_id/tag/is_legal 筛选 + 分页）
+  - `GET /mod/builds/{slug}` 方案详情（含配件清单 + 作者信息）
+- 用户接口（4 个，需登录）：
+  - `POST /mod/builds` 创建方案（is_legal 必填 + 配件清单批量写入）
+  - `PUT /mod/builds/{id}` 更新方案（rejected→draft 自动重置）
+  - `DELETE /mod/builds/{id}` 软删除
+  - `POST /mod/builds/{id}/submit` 提交审核
+- 管理接口（5 个）：
+  - 方案列表/详情/发布/拒绝/删除 + 待审核列表
+- 核心业务规则：is_legal 必填校验、已发布方案不可编辑、拒绝原因必填、整套 audit_log 记录
+
+### 4-B 改装审核后台 ✅
+
+- 1 个页面：`/admin/mod`
+- 列表页：4 个状态 Tab（全部/待审核/已发布/已拒绝）+ 待审核角标数量
+- **违法方案三重醒目提示**：
+  - 左侧红色边框 `border-l-2 border-l-danger`
+  - 标题旁红色 `违法` 角标 badge
+  - 独立 `合规` 列：合规=绿色圆点+文字，违法=红色圆点+加粗文字
+- 列表顶部统计条：`⚠️ 当前列表中有 N 个方案标记为违法改装，请优先审核处理`
+- 详情模态框：
+  - 违法方案顶部红色警示条（含 legal_note 合规说明）
+  - 6 字段信息卡片（作者/车型/总费用/难度/合规/浏览量）
+  - 配件清单子表格（5 列：名称含违法角标/品牌/价格/数量/合规状态，含购买链接）
+  - 内容可折叠预览 + 审核操作按钮（通过/拒绝）
+- 拒绝弹窗：原因必填校验，确认后自动刷新列表
+- 新增 TypeScript 类型：`AdminModBuildItem`, `ModBuildItem`, `ModBuildDetail`, `ModPartItem`
+
+### 4-C 改装展示前端 ✅
+
+- 3 个页面：
+  - `/mod` 方案列表（SSR）：合规说明横幅(⚖️+warning色)、默认只显示合法方案(is_legal=true)、is_legal=false时红色提醒条、方案卡片(封面+难度角标+车型+作者头像+费用+浏览量)、分页
+  - `/mod/[slug]` 方案详情（SSR）：合规区块(✅合规 vs ⚠️非合规+legal_note)、4栏统计卡片(总费用/配件数/难度/浏览)、配件清单表格(6列含购买按钮+非合规角标+合计行)、Markdown渲染内容、HowTo Schema.org JSON-LD、generateMetadata(OGP)
+  - `/mod/new` 发布方案（客户端+需登录）：车型搜索选择(防抖300ms)、合规声明radio(is_legal选择false触发法律风险警告弹窗—《道路交通安全法》风险清单4条)、配件动态增减行、Markdown内容textarea、自动生成slug
+- 合规声明横幅：`⚖️ 本平台仅展示合法改装方案。改装前请了解当地法规，超标改装属违法行为。`
+- 非合规警告弹窗：4条法律风险(违反交法/无法上牌年检/影响保险理赔/安全隐患)+ 两个按钮(改为合规方案/我已知晓风险)
+
+---
+
+## 模块 5：社区功能
+
+### 5-A 后端社区 API ✅
+
+- 5 个 ORM 模型：`topics`(置顶/精华/回复数冗余) + `comments`(通用 target_type+target_id/二级回复/楼层号) + `likes`(联合PK幂等) + `favorites` + `notifications`
+- 5 个 Repo + 1 个 Service：TopicRepo(浏览量自增+回复计数更新)、CommentRepo(楼层号COALESCE MAX+1)、LikeRepo(toggle幂等)、FavoriteRepo(toggle幂等)、NotificationRepo(未读优先排序)
+- 14 个 API：
+  - 帖子：GET/POST `/topics`(置顶优先+last_reply_at降序) | GET/DELETE `/topics/{id}`
+  - 评论：GET/POST `/comments`(通用) | DELETE `/comments/{id}`
+  - 点赞/收藏：POST toggle幂等 | GET `/user/favorites`
+  - 通知：GET `/notifications`(未读优先) | POST `/notifications/read-all`
+- 业务规则：评论二级限制(parent.parent_id存在→400)、楼层号自增、点赞收藏重复操作不报错、通知自动生成(评论→被回复者/帖子作者，点赞→帖子作者，自己操作不通知)
+
+### 5-B 社区前端 ✅
+
+- 4 个页面：
+  - `/community` 首页(SSR)：帖子列表(置顶帖primary色边框+标签)+ 回复/点赞/浏览三栏统计 + relative time(刚刚/分钟前/小时前/天前) + 分页
+  - `/community/[id]` 详情(SSR)：帖子内容 + TopicClient客户端组件(评论列表/二级回复折叠/楼层号#1/点赞/回复输入框) + 未登录跳转login
+  - `/community/new` 发帖(需登录)：标题/内容/标签输入 + 发布后跳转新帖子
+  - `/notifications` 通知中心(需登录)：未读蓝色左侧边框+圆点 + 类型图标映射(💬评论/❤️点赞/👤关注/📢系统) + 全部已读 + 点击link跳转
+- 新增 TypeScript 类型：`TopicItem`, `AuthorInfo`, `CommentItem`, `CommentReplyItem`, `NotificationItem`

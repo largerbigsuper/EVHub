@@ -2930,17 +2930,17 @@ GET /api/v1/admin/stats
 | 1-B | 用户管理后台 | ✅ 已完成 | 后端Admin API(用户列表/封禁/角色CRUD/权限设置) + 前端用户管理页面(搜索/分页/角色Tab/权限弹窗) |
 | 1-C | 登录注册页面 | ✅ 已完成 | react-hook-form+zod表单校验、密码显隐切换、登录/注册流程、admin路由守卫、/login + /register 页面 |
 | 2-A | 品牌车型 API | ✅ 已完成 | Brand/Series/Sku/AttributeGroup/Definition/Value六个模型、公开品牌/车系/SKU接口+筛选+对比、Admin管理接口全CRUD |
-| 2-B | 车型管理后台 | ⬜ 待开始 | |
-| 2-C | 品牌车型前端 | ⬜ 待开始 | |
-| 3-A | 文章 API | ⬜ 待开始 | |
-| 3-B | 内容管理后台 | ⬜ 待开始 | |
-| 3-C | 文章展示前端 | ⬜ 待开始 | |
-| 4-A | 改装 API | ⬜ 待开始 | |
-| 4-B | 改装审核后台 | ⬜ 待开始 | |
-| 4-C | 改装展示前端 | ⬜ 待开始 | |
-| 5-A | 社区 API | ⬜ 待开始 | |
-| 5-B | 社区前端 | ⬜ 待开始 | |
-| 6-A | 搜索 API | ⬜ 待开始 | |
+| 2-B | 车型管理后台 | ✅ 已完成 | 8个管理页面：品牌/车系/SKU CRUD + 属性定义管理(含弹窗) + SKU四Tab编辑(基础/参数/动态属性/颜色标签) |
+| 2-C | 品牌车型前端 | ✅ 已完成 | 品牌列表SSG+详情SSR+车型筛选SSR(URL参数同步)+车型详情SSR(JSON-LD)+对比CSR(差异高亮)，admin路由前缀化 |
+| 3-A | 文章 API | ✅ 已完成 | Category+Article模型、公开文章列表/详情/分类树、管理CRUD+工作流(submit/publish/reject)、Redis浏览量计数+Celery批量落库 |
+| 3-B | 内容管理后台 | ✅ 已完成 | 4个页面：文章列表(5Tab状态筛选+审核操作+拒绝弹窗)、新建文章(MDEditor+右侧SEO面板+30s自动保存)、编辑文章、分类树形管理(增删改+二级限制) |
+| 3-C | 文章展示前端 | ✅ 已完成 | 文章列表SSR(分类Tab+分页)、文章详情SSR(react-markdown+rehype-highlight+TOC目录+JSON-LD)、首页三个内容区块(推荐品牌+热门文章+最新文章) |
+| 4-A | 改装 API | ✅ 已完成 | ModBuild+ModPart模型(一对多)、公开列表/详情(含配件清单)、用户CRUD+工作流(submit)、Admin审核(publish/reject/pending)、is_legal必填校验 |
+| 4-B | 改装审核后台 | ✅ 已完成 | 1个页面：admin/mod改装审核列表(4Tab状态筛选+违法方案红色警示/角标/左侧边框+列表顶部统计提示)、方案详情模态框(合规警告条+配件清单+内容预览+审核操作)、拒绝弹窗(原因必填) |
+| 4-C | 改装展示前端 | ✅ 已完成 | 3个页面：方案列表SSR(合规横幅+is_legal筛选+方案卡片+分页)、方案详情SSR(合规区块+Markdown+配件清单表格含购买按钮+HowTo Schema+4栏统计)、发布方案(车型搜索选择+合规声明radio+非合规警告弹窗+配件动态增减+Markdown内容) |
+| 5-A | 社区 API | ✅ 已完成 | Topic(置顶/精华/回复数)+Comment(通用评论/target_type+target_id/二级回复/楼层号)+Like+Favorite+Notification模型、5个Repo+1个Service(通知自动生成)、14个API(帖子CRUD+评论CRUD+点赞toggle+收藏toggle+收藏列表+通知列表/全部已读) |
+| 5-B | 社区前端 | ✅ 已完成 | 4个页面：社区首页SSR(置顶帖子+回复/点赞/浏览统计卡片+relative time)、帖子详情SSR+TopicClient(评论+二级回复折叠+楼层号#1+点赞+回复输入框)、发帖页(需登录+标题/内容/标签)、通知中心(未读优先+类型图标+全部已读+跳转)，新增4个TS类型 |
+| 6-A | 搜索 API | ✅ 已完成 | 3个API：GET /search(分组结果articles/vehicles/brands+pg_trgm模糊匹配+ILIKE+similarity排序)+GET /search/suggest(热词+品牌名+车型名补全)+GET /search/hot(热搜榜)、SearchService抽象接口+PgSearchService实现、search_keywords统计表+自动记录 |
 | 6-B | 搜索前端 | ⬜ 待开始 | |
 | 7-A | SEO 接口 | ⬜ 待开始 | |
 | 7-B | 性能优化 | ⬜ 待开始 | |
