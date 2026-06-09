@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
+
+from app.core.response import BaseResponse, PageMeta, PageResponse
 
 
 class RegisterRequest(BaseModel):
@@ -12,7 +14,7 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponseData(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -22,7 +24,7 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-class UserResponse(BaseModel):
+class UserResponseData(BaseModel):
     id: str
     username: str
     nickname: str | None = None
@@ -38,3 +40,10 @@ class UserResponse(BaseModel):
 class UserUpdateRequest(BaseModel):
     nickname: str | None = Field(None, max_length=100)
     avatar: str | None = Field(None, max_length=500)
+
+
+# ---- Response Models ----
+
+TokenResp = BaseResponse[TokenResponseData]
+UserResp = BaseResponse[UserResponseData]
+MessageResp = BaseResponse[None]

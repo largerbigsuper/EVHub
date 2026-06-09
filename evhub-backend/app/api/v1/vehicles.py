@@ -3,19 +3,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.response import success_response
+from app.schemas.vehicle import SeriesResp, SkuSearchResp, SkuDetailResp, CompareResp
 from app.services.vehicle_service import VehicleService
 
 router = APIRouter(tags=["车型"])
 
 
-@router.get("/series/{slug}")
+@router.get("/series/{slug}", response_model=SeriesResp)
 async def get_series(slug: str, db: AsyncSession = Depends(get_db)):
     service = VehicleService(db)
     series = await service.get_series(slug)
     return success_response(data=series)
 
 
-@router.get("/skus")
+@router.get("/skus", response_model=SkuSearchResp)
 async def search_skus(
     brand_slug: str | None = Query(None),
     battery_type: str | None = Query(None),
@@ -43,14 +44,14 @@ async def search_skus(
     return success_response(data=result["data"], meta=result["meta"])
 
 
-@router.get("/skus/{slug}")
+@router.get("/skus/{slug}", response_model=SkuDetailResp)
 async def get_sku(slug: str, db: AsyncSession = Depends(get_db)):
     service = VehicleService(db)
     sku = await service.get_sku(slug)
     return success_response(data=sku)
 
 
-@router.get("/skus/compare")
+@router.get("/skus/compare", response_model=CompareResp)
 async def compare_skus(
     ids: str = Query(description="逗号分隔的SKU ID，最多4个"),
     db: AsyncSession = Depends(get_db),

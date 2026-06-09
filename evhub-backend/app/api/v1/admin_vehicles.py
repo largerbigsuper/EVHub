@@ -5,18 +5,31 @@ from app.core.database import get_db
 from app.core.response import success_response
 from app.dependencies import get_current_user
 from app.schemas.vehicle import (
-    BrandCreate, BrandUpdate,
-    SeriesCreate, SeriesUpdate,
-    SkuCreate, SkuUpdate, SkuAttributeValuesUpdate,
-    AttributeGroupCreate, AttributeGroupUpdate,
-    AttributeDefinitionCreate, AttributeDefinitionUpdate,
+    BrandCreate,
+    BrandUpdate,
+    SeriesCreate,
+    SeriesUpdate,
+    SkuCreate,
+    SkuUpdate,
+    SkuAttributeValuesUpdate,
+    AttributeGroupCreate,
+    AttributeGroupUpdate,
+    AttributeDefinitionCreate,
+    AttributeDefinitionUpdate,
+    BrandResp,
+    SeriesResp,
+    SkuResp,
+    AttributeGroupResp,
+    AttributeGroupListResp,
+    AttributeDefResp,
+    VehicleMessageResp,
 )
 from app.services.vehicle_service import VehicleService
 
 router = APIRouter(prefix="/admin", tags=["管理员"])
 
 
-@router.post("/brands")
+@router.post("/brands", response_model=BrandResp)
 async def create_brand(
     req: BrandCreate,
     current_user: dict = Depends(get_current_user),
@@ -27,7 +40,7 @@ async def create_brand(
     return success_response(data=brand, message="品牌创建成功")
 
 
-@router.put("/brands/{brand_id}")
+@router.put("/brands/{brand_id}", response_model=BrandResp)
 async def update_brand(
     brand_id: str,
     req: BrandUpdate,
@@ -40,7 +53,7 @@ async def update_brand(
     return success_response(data=brand, message="品牌更新成功")
 
 
-@router.delete("/brands/{brand_id}")
+@router.delete("/brands/{brand_id}", response_model=VehicleMessageResp)
 async def delete_brand(
     brand_id: str,
     current_user: dict = Depends(get_current_user),
@@ -51,7 +64,7 @@ async def delete_brand(
     return success_response(message="品牌已删除")
 
 
-@router.post("/series")
+@router.post("/series", response_model=SeriesResp)
 async def create_series(
     req: SeriesCreate,
     current_user: dict = Depends(get_current_user),
@@ -62,7 +75,7 @@ async def create_series(
     return success_response(data=series, message="车系创建成功")
 
 
-@router.put("/series/{series_id}")
+@router.put("/series/{series_id}", response_model=SeriesResp)
 async def update_series(
     series_id: str,
     req: SeriesUpdate,
@@ -75,7 +88,7 @@ async def update_series(
     return success_response(data=series, message="车系更新成功")
 
 
-@router.delete("/series/{series_id}")
+@router.delete("/series/{series_id}", response_model=VehicleMessageResp)
 async def delete_series(
     series_id: str,
     current_user: dict = Depends(get_current_user),
@@ -86,7 +99,7 @@ async def delete_series(
     return success_response(message="车系已删除")
 
 
-@router.post("/skus")
+@router.post("/skus", response_model=SkuResp)
 async def create_sku(
     req: SkuCreate,
     current_user: dict = Depends(get_current_user),
@@ -97,7 +110,7 @@ async def create_sku(
     return success_response(data=sku, message="车型创建成功")
 
 
-@router.put("/skus/{sku_id}")
+@router.put("/skus/{sku_id}", response_model=SkuResp)
 async def update_sku(
     sku_id: str,
     req: SkuUpdate,
@@ -110,7 +123,7 @@ async def update_sku(
     return success_response(data=sku, message="车型更新成功")
 
 
-@router.delete("/skus/{sku_id}")
+@router.delete("/skus/{sku_id}", response_model=VehicleMessageResp)
 async def delete_sku(
     sku_id: str,
     current_user: dict = Depends(get_current_user),
@@ -121,7 +134,7 @@ async def delete_sku(
     return success_response(message="车型已删除")
 
 
-@router.put("/skus/{sku_id}/attributes")
+@router.put("/skus/{sku_id}/attributes", response_model=VehicleMessageResp)
 async def set_sku_attributes(
     sku_id: str,
     req: SkuAttributeValuesUpdate,
@@ -134,7 +147,7 @@ async def set_sku_attributes(
     return success_response(message="属性设置成功")
 
 
-@router.get("/attributes/groups")
+@router.get("/attributes/groups", response_model=AttributeGroupListResp)
 async def list_attribute_groups(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -144,7 +157,7 @@ async def list_attribute_groups(
     return success_response(data=groups)
 
 
-@router.post("/attributes/groups")
+@router.post("/attributes/groups", response_model=AttributeGroupResp)
 async def create_attribute_group(
     req: AttributeGroupCreate,
     current_user: dict = Depends(get_current_user),
@@ -155,7 +168,7 @@ async def create_attribute_group(
     return success_response(data=group, message="属性组创建成功")
 
 
-@router.put("/attributes/groups/{group_id}")
+@router.put("/attributes/groups/{group_id}", response_model=AttributeGroupResp)
 async def update_attribute_group(
     group_id: str,
     req: AttributeGroupUpdate,
@@ -168,7 +181,7 @@ async def update_attribute_group(
     return success_response(data=group, message="属性组更新成功")
 
 
-@router.delete("/attributes/groups/{group_id}")
+@router.delete("/attributes/groups/{group_id}", response_model=VehicleMessageResp)
 async def delete_attribute_group(
     group_id: str,
     current_user: dict = Depends(get_current_user),
@@ -179,7 +192,7 @@ async def delete_attribute_group(
     return success_response(message="属性组已删除")
 
 
-@router.post("/attributes/definitions")
+@router.post("/attributes/definitions", response_model=AttributeDefResp)
 async def create_attribute_definition(
     req: AttributeDefinitionCreate,
     current_user: dict = Depends(get_current_user),
@@ -190,7 +203,7 @@ async def create_attribute_definition(
     return success_response(data=definition, message="属性定义创建成功")
 
 
-@router.put("/attributes/definitions/{definition_id}")
+@router.put("/attributes/definitions/{definition_id}", response_model=AttributeDefResp)
 async def update_attribute_definition(
     definition_id: str,
     req: AttributeDefinitionUpdate,
@@ -203,7 +216,7 @@ async def update_attribute_definition(
     return success_response(data=definition, message="属性定义更新成功")
 
 
-@router.delete("/attributes/definitions/{definition_id}")
+@router.delete("/attributes/definitions/{definition_id}", response_model=VehicleMessageResp)
 async def delete_attribute_definition(
     definition_id: str,
     current_user: dict = Depends(get_current_user),

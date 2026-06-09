@@ -9,13 +9,16 @@ from app.schemas.auth import (
     LoginRequest,
     RefreshRequest,
     UserUpdateRequest,
+    TokenResp,
+    UserResp,
+    MessageResp,
 )
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
 
-@router.post("/register")
+@router.post("/register", response_model=TokenResp)
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     service = AuthService(db)
     user = await service.register(
@@ -26,21 +29,21 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     return success_response(data=user, message="注册成功")
 
 
-@router.post("/login")
+@router.post("/login", response_model=TokenResp)
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     service = AuthService(db)
     tokens = await service.login(login=req.login, password=req.password)
     return success_response(data=tokens, message="登录成功")
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=TokenResp)
 async def refresh(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
     service = AuthService(db)
     tokens = await service.refresh(refresh_token=req.refresh_token)
     return success_response(data=tokens, message="Token 刷新成功")
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=MessageResp)
 async def logout(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -50,7 +53,7 @@ async def logout(
     return success_response(message="已退出登录")
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserResp)
 async def get_me(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -60,7 +63,7 @@ async def get_me(
     return success_response(data=user)
 
 
-@router.put("/me")
+@router.put("/me", response_model=UserResp)
 async def update_me(
     req: UserUpdateRequest,
     current_user: dict = Depends(get_current_user),

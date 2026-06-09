@@ -4,13 +4,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.response import success_response
 from app.dependencies import get_current_user
-from app.schemas.admin import RoleCreate, RoleUpdate, RolePermissionsUpdate
+from app.schemas.admin import (
+    RoleCreate,
+    RoleUpdate,
+    RolePermissionsUpdate,
+    RoleListResp,
+    RoleResp,
+    RoleDetailResp,
+    PermissionListResp,
+    AdminMessageResp,
+)
 from app.services.admin_service import AdminService
 
 router = APIRouter(prefix="/admin", tags=["管理员"])
 
 
-@router.get("/roles")
+@router.get("/roles", response_model=RoleListResp)
 async def list_roles(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -20,7 +29,7 @@ async def list_roles(
     return success_response(data=roles)
 
 
-@router.get("/roles/{role_id}")
+@router.get("/roles/{role_id}", response_model=RoleDetailResp)
 async def get_role(
     role_id: str,
     current_user: dict = Depends(get_current_user),
@@ -31,7 +40,7 @@ async def get_role(
     return success_response(data=role)
 
 
-@router.post("/roles")
+@router.post("/roles", response_model=RoleResp)
 async def create_role(
     req: RoleCreate,
     current_user: dict = Depends(get_current_user),
@@ -44,7 +53,7 @@ async def create_role(
     return success_response(data=role, message="角色创建成功")
 
 
-@router.put("/roles/{role_id}")
+@router.put("/roles/{role_id}", response_model=RoleResp)
 async def update_role(
     role_id: str,
     req: RoleUpdate,
@@ -58,7 +67,7 @@ async def update_role(
     return success_response(data=role, message="角色更新成功")
 
 
-@router.delete("/roles/{role_id}")
+@router.delete("/roles/{role_id}", response_model=AdminMessageResp)
 async def delete_role(
     role_id: str,
     current_user: dict = Depends(get_current_user),
@@ -69,7 +78,7 @@ async def delete_role(
     return success_response(message="角色已删除")
 
 
-@router.put("/roles/{role_id}/permissions")
+@router.put("/roles/{role_id}/permissions", response_model=AdminMessageResp)
 async def set_role_permissions(
     role_id: str,
     req: RolePermissionsUpdate,
@@ -81,7 +90,7 @@ async def set_role_permissions(
     return success_response(message="权限设置成功")
 
 
-@router.get("/permissions")
+@router.get("/permissions", response_model=PermissionListResp)
 async def list_permissions(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

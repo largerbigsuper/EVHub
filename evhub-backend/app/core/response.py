@@ -25,6 +25,16 @@ class PageResponse(BaseModel, Generic[T]):
     meta: PageMeta
 
 
+class SuccessResponse(BaseResponse[Any]):
+    pass
+
+
+class ErrorResponse(BaseModel):
+    code: int
+    message: str
+    data: None = None
+
+
 def success_response(data: Any = None, message: str = "success", meta: dict | None = None) -> dict:
     result = {"code": 200, "message": message, "data": data}
     if meta:
