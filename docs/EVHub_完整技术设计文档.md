@@ -2941,11 +2941,11 @@ GET /api/v1/admin/stats
 | 5-A | 社区 API | ✅ 已完成 | Topic(置顶/精华/回复数)+Comment(通用评论/target_type+target_id/二级回复/楼层号)+Like+Favorite+Notification模型、5个Repo+1个Service(通知自动生成)、14个API(帖子CRUD+评论CRUD+点赞toggle+收藏toggle+收藏列表+通知列表/全部已读) |
 | 5-B | 社区前端 | ✅ 已完成 | 4个页面：社区首页SSR(置顶帖子+回复/点赞/浏览统计卡片+relative time)、帖子详情SSR+TopicClient(评论+二级回复折叠+楼层号#1+点赞+回复输入框)、发帖页(需登录+标题/内容/标签)、通知中心(未读优先+类型图标+全部已读+跳转)，新增4个TS类型 |
 | 6-A | 搜索 API | ✅ 已完成 | 3个API：GET /search(分组结果articles/vehicles/brands+pg_trgm模糊匹配+ILIKE+similarity排序)+GET /search/suggest(热词+品牌名+车型名补全)+GET /search/hot(热搜榜)、SearchService抽象接口+PgSearchService实现、search_keywords统计表+自动记录 |
-| 6-B | 搜索前端 | ⬜ 待开始 | |
-| 7-A | SEO 接口 | ⬜ 待开始 | |
-| 7-B | 性能优化 | ⬜ 待开始 | |
-| 8-A | Dashboard | ⬜ 待开始 | |
-| 8-B | 导航与路由守卫 | ⬜ 待开始 | |
+| 6-B | 搜索前端 | ✅ 已完成 | 3个文件：SearchBar组件(debounce 300ms联想建议+热搜榜下拉+键盘导航↑↓Enter Escape+关键词高亮<mark>)、搜索页SSR+SearchClient(Tab切换全部/文章/车型/品牌+类型图标+分页)、Navbar导航栏(品牌/车型/文章/改装/社区链接+搜索框+登录态+铃铛图标通知入口+发帖按钮+移动端搜索图标) |
+| 7-A | SEO 接口 | ✅ 已完成 | sitemap.xml动态生成(Redis缓存1h+优先级首页1.0→车型0.9→文章0.8→品牌0.7→改装0.6+>5万自动sitemap_index分片)+robots.txt(允许爬虫/disallow /api/和/admin/)+JSON-LD Schema接口(vehicle→Product/article→Article/brand→Organization/mod→HowTo)+sitemap缓存失效方法 |
+| 7-B | 性能优化 | ✅ 已完成 | lib/seo.tsx(buildMetadata+OGP+Twitter Card+buildJsonLd WebSite/Article/Product/HowTo/BreadcrumbList+JsonLd组件)+根布局(robots index/follow+GA4+WebSite JSON-LD+SearchAction)+首页ISR revalidate 3600 |
+| 8-A | Dashboard | ✅ 已完成 | 后端3个API：GET /admin/stats(Redis缓存5min+用户/文章/车型统计+今日增量+待审核+违法方案#红色警示)+GET /admin/trends(7天折线数据+缓存)+GET /admin/audit-logs(最近10条)、前端Dashboard页：4色统计卡片(蓝/绿/紫/橙border-l)+待处理事项(文章+改装链接+违法⚠️红底)+Recharts折线图+操作日志表格(操作类型中文映射+timeAgo) |
+| 8-B | 导航与路由守卫 | ✅ 已完成 | AdminLayout增强(左侧菜单active高亮+图标📊📝🚗🔧👤+移动端抽屉式sidebar+汉堡按钮+遮罩层+面包屑中文化映射+顶部"查看前台"链接)、middleware.ts(token校验/admin角色editor+重定向带redirect参数)、Toast全局通知组件(success/error/info三种+auto-dismiss 3.5s+Providers集成) |
 
 ---
 

@@ -322,3 +322,26 @@ export interface NotificationItem {
   is_read: boolean;
   created_at: string | null;
 }
+
+// ---- Search Types ----
+
+export interface SearchResultItem {
+  id: string;
+  title: string;
+  excerpt: string | null;
+  url: string;
+  type: string;
+  extra: Record<string, unknown> | null;
+}
+
+export interface SearchResult {
+  articles: SearchResultItem[];
+  vehicles: SearchResultItem[];
+  brands: SearchResultItem[];
+  total: number;
+}
+
+export interface HotKeyword {
+  keyword: string;
+  search_count: number;
+}

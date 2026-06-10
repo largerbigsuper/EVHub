@@ -5,6 +5,8 @@ from app.api.v1 import articles, admin_articles
 from app.api.v1 import mod, admin_mod
 from app.api.v1 import community
 from app.api.v1 import search
+from app.api.v1 import seo
+from app.api.v1 import dashboard
 
 router = APIRouter()
 
@@ -20,3 +22,5 @@ router.include_router(mod.router)
 router.include_router(admin_mod.router)
 router.include_router(community.router)
 router.include_router(search.router)
+router.include_router(seo.router)
+router.include_router(dashboard.router)

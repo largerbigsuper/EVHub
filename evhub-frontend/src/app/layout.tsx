@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { buildJsonLd, JsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +23,18 @@ export const metadata: Metadata = {
     title: "EVHub - 两轮电动车专业内容与数据平台",
     description: "电动车品牌库、车型参数查询、改装方案、专业测评",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
 };
+
+const websiteJsonLd = buildJsonLd("WebSite", { name: "EVHub" });
+const gaId = process.env.NEXT_PUBLIC_GA_ID || "";
 
 export default function RootLayout({
   children,
@@ -30,6 +43,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
+      <head>
+        <JsonLd data={websiteJsonLd} />
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}');`}
+            </Script>
+          </>
+        )}
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>

@@ -206,3 +206,80 @@
   - `/community/new` 发帖(需登录)：标题/内容/标签输入 + 发布后跳转新帖子
   - `/notifications` 通知中心(需登录)：未读蓝色左侧边框+圆点 + 类型图标映射(💬评论/❤️点赞/👤关注/📢系统) + 全部已读 + 点击link跳转
 - 新增 TypeScript 类型：`TopicItem`, `AuthorInfo`, `CommentItem`, `CommentReplyItem`, `NotificationItem`
+
+---
+
+## 模块 6：搜索功能
+
+### 6-A 后端搜索 API ✅
+
+- `SearchServiceInterface` 抽象接口（ABC）：`search()`/`suggest()`/`sync_document()`/`remove_document()`，当前 PgSearchService 实现，预留 MeilisearchSearchService 替换
+- 3 个 API：
+  - `GET /search?q=&type=all&page=1`：分组结果 `{articles[], vehicles[], brands[], total}`，ILIKE+pg_trgm similarity 加权排序(title 0 > excerpt 1 > similarity 2)，分类型独立计数+JOIN品牌/车系名
+  - `GET /search/suggest?q=`：联想补全（热词前缀匹配→品牌名→车型名，最多10条）
+  - `GET /search/hot`：热搜榜 TOP 10（search_count DESC）
+- `search_keywords` 表：关键词+搜索次数+最近搜索时间，每次搜索自动 upsert
+
+### 6-B 搜索前端 & 导航栏 ✅
+
+- 3 个文件：
+  - `SearchBar` 组件：debounce 300ms 联想建议 + 热搜榜下拉 + 键盘导航(↑↓选中/Enter跳转/Escape关闭) + 搜索词 `<mark>` 高亮 + 点击外部关闭
+  - `/search` 搜索页（SSR+Client）：Tab 切换(全部/文章/车型/品牌) + 类型图标(📄/🚗/🏭) + 品牌/车系extra信息 + 搜索词 `<mark>` 高亮 + 分页
+  - `Navbar` 导航栏（全局公共布局）：品牌/车型/文章/改装/社区链接 + 居中搜索框 + 右侧登录态(铃铛图标通知入口+发帖按钮/用户昵称) 或 登录/注册按钮 + 移动端搜索图标
+- 新增 TypeScript 类型：`SearchResultItem`, `SearchResult`, `HotKeyword`
+- 修改：`(public)/layout.tsx` 集成 Navbar + `src/types/api.ts` 新增搜索类型
+
+---
+
+## 模块 7：SEO 与性能优化
+
+### 7-A 后端 SEO API ✅
+
+- `services/seo_service.py`：sitemap 动态生成(首页priority=1.0 daily、车型0.9 monthly、文章0.8 weekly含lastmod、品牌0.7 monthly、改装0.6 weekly)、Redis 缓存 1h TTL、>5万条目自动拆分为 sitemap_index.xml + sitemap_{n}.xml 分片、`invalidate_sitemap_cache()` 供文章发布后调用
+- JSON-LD Schema 生成：`build_jsonld_vehicle`(Product)→`build_jsonld_article`(Article)→`build_jsonld_brand`(Organization)→`build_jsonld_modbuild`(HowTo)
+- `GET /sitemap.xml`（main.py 直接路由）：从 Redis 读取缓存，按 `?part=N` 获取分片
+- `GET /robots.txt`：Allow / + Disallow /api/和/admin/ + Sitemap 指向
+- `GET /api/v1/seo/schema/{type}/{id}`：返回指定资源 JSON-LD
+- 修改：`main.py` 新增 sitemap/robots 路由 + `app/api/v1/` 注册 seo 路由
+
+### 7-B 前端 SEO 与性能 ✅
+
+- `lib/seo.tsx`：
+  - `buildMetadata()`：canonical url + OGP(title/description/url/type/images/publishedTime/modifiedTime) + Twitter Card + Baidu 验证
+  - `buildJsonLd()`：WebSite(含SearchAction)/Article/Product/HowTo/BreadcrumbList
+  - `JsonLd` 组件：`<script type="application/ld+json">`
+- 根布局 `layout.tsx`：robots index/follow + WebSite JSON-LD(SearchAction urlTemplate) + GA4(Script afterInteractive)
+- 首页 `page.tsx`：ISR `revalidate = 3600`
+- TypeScript 类型兼容：OGP type 仅支持 website/article，product 自动 fallback 为 website
+
+---
+
+## 模块 8：系统管理与收尾
+
+### 8-A 后台 Dashboard ✅
+
+- 后端 3 个 API（`GET /admin/stats` + `GET /admin/trends` + `GET /admin/audit-logs`）：
+  - `dashboard_service.py`：stats(Redis缓存5min计数字段含今日today+待审核pending+违法方案illegal_mod)、trends(7天折线数据articles+缓存)、audit-logs(最近10条操作日志)
+  - `dashboard.py` API路由 + `schemas/dashboard.py` 响应Schema
+- 前端 Dashboard 页 `admin/dashboard/page.tsx`：
+  - 4 色统计卡片(用户蓝/文章绿/车型紫/待处理橙 × border-l-4 + 今日同比)
+  - 待处理事项(待审核文章+待审核改装→链接跳转 + 违法方案⚠️红色背景独立行)
+  - Recharts 折线图(7天文章发布趋势+ResponsiveContainer+CartesianGrid+Tooltip)
+  - 操作日志表格(操作类型中文映射13个+资源名+JSON详情截断60字符+timeAgo)
+- npm 新增依赖：recharts
+
+### 8-B 导航与路由守卫 ✅
+
+- AdminLayout 重构 `(admin)/layout.tsx`：
+  - 左侧菜单 active 高亮(primary色bg+字体)/图标📊📝🚗🔧👤
+  - 移动端抽屉式 sidebar(toggle+遮罩层+点击导航关闭)
+  - 顶部栏(汉堡按钮mobile+面包屑中文化映射13个路径段+最右"查看前台→"新标签)
+  - 底部栏(用户名+退出登录hover红色)
+- `middleware.ts` 路由守卫：
+  - `/admin/*` 和 `/community/new/*` 校验 access_token cookie
+  - admin 路径额外校验 user_role cookie(admin/editor)
+  - 无token跳转 `/login?redirect=原路径`
+- `Toast` 全局通知组件：
+  - 3 种类型(success绿/error红/info蓝) + 图标 ✓/✕/ℹ
+  - auto-dismiss 3.5s + 点击手动关闭
+  - 集成到 Providers + useToast() hook
