@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Integer, Boolean, DECIMAL, DateTime, func, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, Integer, Boolean, DECIMAL, DateTime, func, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -26,8 +25,8 @@ class VehicleSku(Base):
     top_speed_kmh: Mapped[int | None] = mapped_column(Integer, comment="最高时速(km/h)")
     weight_kg: Mapped[float | None] = mapped_column(DECIMAL(6, 1), comment="整车重量(kg)")
     requires_license: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="是否需要驾照")
-    colors: Mapped[list | None] = mapped_column(JSONB, comment="可选颜色列表")
-    tags: Mapped[list | None] = mapped_column(JSONB, comment="标签列表(如：['长续航','性价比','运动'])")
+    colors: Mapped[list | None] = mapped_column(JSON, comment="可选颜色列表")
+    tags: Mapped[list | None] = mapped_column(JSON, comment="标签列表(如：['长续航','性价比','运动'])")
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否推荐车型")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")

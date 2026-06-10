@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import uuid
 
-from sqlalchemy import select, text, func, union_all
+from sqlalchemy import select, text, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.engine import Dialect
 
 from app.models.article import Article
 from app.models.brand import Brand
@@ -48,10 +49,41 @@ class SearchServiceInterface(ABC):
         ...
 
 
+def _sql_like_field(field_name: str, dialect_name: str) -> str:
+    if dialect_name == "sqlite":
+        return f"LOWER({field_name}) LIKE LOWER(:q1)"
+    return f"{field_name} ILIKE :q1"
+
+
+def _sql_similarity(field_name: str, dialect_name: str) -> str:
+    if dialect_name == "sqlite":
+        return f"LOWER({field_name}) LIKE LOWER(:q2)"
+    return f"similarity({field_name}, :q3) > 0.1"
+
+
+def _sql_rank_order(field_name: str, dialect_name: str) -> str:
+    if dialect_name == "sqlite":
+        return f"CASE WHEN LOWER({field_name}) LIKE LOWER(:q1) THEN 0 ELSE 1 END"
+    return f"CASE WHEN {field_name} ILIKE :q1 THEN 0 ELSE 1 END"
+
+
 class PgSearchService(SearchServiceInterface):
     def __init__(self, db: AsyncSession):
         self.db = db
-        self._page_size = 10
+        self._dialect_name = db.get_bind().dialect.name if db.get_bind() else "postgresql"
+
+    def _like(self, field: str) -> str:
+        return _sql_like_field(field, self._dialect_name)
+
+    def _similarity(self, field: str) -> str:
+        return _sql_similarity(field, self._dialect_name)
+
+    def _rank(self, field: str) -> str:
+        return _sql_rank_order(field, self._dialect_name)
+
+    def _build_search_condition(self, *fields: str, like_var: str = "q1") -> str:
+        parts = [self._like(f) for f in fields]
+        return " OR ".join(parts)
 
     async def search(self, q: str, type: str, page: int, page_size: int = 10) -> SearchResult:
         result = SearchResult(articles=[], vehicles=[], brands=[], total=0)
@@ -60,6 +92,27 @@ class PgSearchService(SearchServiceInterface):
         offset = (page - 1) * page_size
 
         if type in ("all", "article"):
+            article_cond = (
+                f"{self._like('articles.title')} OR "
+                f"{self._like('articles.excerpt')} OR "
+                f"{self._similarity('articles.title')}"
+            )
+            rank_clause = (
+                f"CASE WHEN {self._like('articles.title')} THEN 0 "
+                f"WHEN {self._like('articles.excerpt')} THEN 1 ELSE 2 END"
+            ).replace(":q1", ":q1").replace("ILIKE", "ILIKE")
+
+            if self._dialect_name == "sqlite":
+                rank_clause = (
+                    f"CASE WHEN LOWER(articles.title) LIKE LOWER(:q1) THEN 0 "
+                    f"WHEN LOWER(articles.excerpt) LIKE LOWER(:q2) THEN 1 ELSE 2 END"
+                )
+            else:
+                rank_clause = (
+                    "CASE WHEN articles.title ILIKE :q1 THEN 0 "
+                    "WHEN articles.excerpt ILIKE :q2 THEN 1 ELSE 2 END"
+                )
+
             articles_stmt = (
                 select(
                     Article.id.label("id"),
@@ -70,17 +123,9 @@ class PgSearchService(SearchServiceInterface):
                 .where(
                     Article.deleted_at.is_(None),
                     Article.status == "published",
-                    text(
-                        "articles.title ILIKE :q1 OR articles.excerpt ILIKE :q2 OR "
-                        "similarity(articles.title, :q3) > 0.1"
-                    ).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                    text(article_cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
                 )
-                .order_by(
-                    text(
-                        "CASE WHEN articles.title ILIKE :q1 THEN 0 "
-                        "WHEN articles.excerpt ILIKE :q2 THEN 1 ELSE 2 END"
-                    ).bindparams(q1=like_pattern, q2=like_pattern)
-                )
+                .order_by(text(rank_clause).bindparams(q1=like_pattern, q2=like_pattern))
                 .limit(page_size)
                 .offset(offset)
             )
@@ -97,6 +142,12 @@ class PgSearchService(SearchServiceInterface):
             result.total += count
 
         if type in ("all", "vehicle"):
+            v_cond = (
+                f"{self._like('vehicle_skus.name')} OR "
+                f"{self._like('vehicle_series.name')} OR "
+                f"{self._like('brands.name')} OR "
+                f"{self._similarity('vehicle_skus.name')}"
+            )
             vehicles_stmt = (
                 select(
                     VehicleSku.id.label("id"),
@@ -109,16 +160,9 @@ class PgSearchService(SearchServiceInterface):
                 .join(Brand, VehicleSeries.brand_id == Brand.id)
                 .where(
                     VehicleSku.deleted_at.is_(None),
-                    text(
-                        "vehicle_skus.name ILIKE :q1 OR vehicle_series.name ILIKE :q1 OR "
-                        "brands.name ILIKE :q1 OR similarity(vehicle_skus.name, :q2) > 0.1"
-                    ).bindparams(q1=like_pattern, q2=q),
+                    text(v_cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
                 )
-                .order_by(
-                    text(
-                        "CASE WHEN vehicle_skus.name ILIKE :q1 THEN 0 ELSE 1 END"
-                    ).bindparams(q1=like_pattern)
-                )
+                .order_by(text(self._rank("vehicle_skus.name")).bindparams(q1=like_pattern))
                 .limit(page_size)
                 .offset(offset)
             )
@@ -138,6 +182,11 @@ class PgSearchService(SearchServiceInterface):
             result.total += vcount
 
         if type in ("all", "brand"):
+            b_cond = (
+                f"{self._like('brands.name')} OR "
+                f"{self._like('brands.description')} OR "
+                f"{self._similarity('brands.name')}"
+            )
             brands_stmt = (
                 select(
                     Brand.id.label("id"),
@@ -148,10 +197,7 @@ class PgSearchService(SearchServiceInterface):
                 )
                 .where(
                     Brand.deleted_at.is_(None),
-                    text(
-                        "brands.name ILIKE :q1 OR brands.description ILIKE :q1 OR "
-                        "similarity(brands.name, :q2) > 0.1"
-                    ).bindparams(q1=like_pattern, q2=q),
+                    text(b_cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
                 )
                 .limit(page_size)
                 .offset(offset)
@@ -176,31 +222,35 @@ class PgSearchService(SearchServiceInterface):
         safe_q = q.replace("%", "\\%").replace("_", "\\_")
         like_pattern = f"{safe_q}%"
 
-        kw_stmt = (
-            select(SearchKeyword.keyword)
-            .where(SearchKeyword.keyword.ilike(like_pattern))
-            .order_by(SearchKeyword.search_count.desc())
-            .limit(5)
-        )
+        is_sqlite = self._dialect_name == "sqlite"
+
+        kw_stmt = select(SearchKeyword.keyword)
+        if is_sqlite:
+            kw_stmt = kw_stmt.where(func.lower(SearchKeyword.keyword).like(func.lower(like_pattern)))
+        else:
+            kw_stmt = kw_stmt.where(SearchKeyword.keyword.ilike(like_pattern))
+        kw_stmt = kw_stmt.order_by(SearchKeyword.search_count.desc()).limit(5)
         kw_result = await self.db.execute(kw_stmt)
         suggestions = [row[0] for row in kw_result.fetchall()]
 
         if len(suggestions) < 10:
-            brand_names_stmt = (
-                select(Brand.name)
-                .where(Brand.deleted_at.is_(None), Brand.name.ilike(like_pattern))
-                .limit(5)
-            )
-            brand_result = await self.db.execute(brand_names_stmt)
+            brand_stmt = select(Brand.name).where(Brand.deleted_at.is_(None))
+            if is_sqlite:
+                brand_stmt = brand_stmt.where(func.lower(Brand.name).like(func.lower(like_pattern)))
+            else:
+                brand_stmt = brand_stmt.where(Brand.name.ilike(like_pattern))
+            brand_stmt = brand_stmt.limit(5)
+            brand_result = await self.db.execute(brand_stmt)
             suggestions.extend(row[0] for row in brand_result.fetchall())
 
         if len(suggestions) < 10:
-            vehicle_names_stmt = (
-                select(VehicleSku.name)
-                .where(VehicleSku.deleted_at.is_(None), VehicleSku.name.ilike(like_pattern))
-                .limit(5)
-            )
-            vehicle_result = await self.db.execute(vehicle_names_stmt)
+            vehicle_stmt = select(VehicleSku.name).where(VehicleSku.deleted_at.is_(None))
+            if is_sqlite:
+                vehicle_stmt = vehicle_stmt.where(func.lower(VehicleSku.name).like(func.lower(like_pattern)))
+            else:
+                vehicle_stmt = vehicle_stmt.where(VehicleSku.name.ilike(like_pattern))
+            vehicle_stmt = vehicle_stmt.limit(5)
+            vehicle_result = await self.db.execute(vehicle_stmt)
             suggestions.extend(row[0] for row in vehicle_result.fetchall())
 
         return suggestions[:10]
@@ -211,23 +261,37 @@ class PgSearchService(SearchServiceInterface):
     async def remove_document(self, type: str, id: uuid.UUID) -> None:
         pass
 
+    def _build_count_condition(self, *field_pairs) -> str:
+        parts = []
+        for field, var in field_pairs:
+            parts.append(self._like(field))
+        return " OR ".join(parts)
+
     async def _count_articles(self, like_pattern: str, q: str) -> int:
+        cond = (
+            f"{self._like('articles.title')} OR "
+            f"{self._like('articles.excerpt')} OR "
+            f"{self._similarity('articles.title')}"
+        )
         stmt = (
             select(func.count())
             .select_from(Article)
             .where(
                 Article.deleted_at.is_(None),
                 Article.status == "published",
-                text(
-                    "articles.title ILIKE :q1 OR articles.excerpt ILIKE :q2 OR "
-                    "similarity(articles.title, :q3) > 0.1"
-                ).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                text(cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
             )
         )
         result = await self.db.execute(stmt)
         return result.scalar() or 0
 
     async def _count_vehicles(self, like_pattern: str, q: str) -> int:
+        cond = (
+            f"{self._like('vehicle_skus.name')} OR "
+            f"{self._like('vehicle_series.name')} OR "
+            f"{self._like('brands.name')} OR "
+            f"{self._similarity('vehicle_skus.name')}"
+        )
         stmt = (
             select(func.count())
             .select_from(VehicleSku)
@@ -235,25 +299,24 @@ class PgSearchService(SearchServiceInterface):
             .join(Brand, VehicleSeries.brand_id == Brand.id)
             .where(
                 VehicleSku.deleted_at.is_(None),
-                text(
-                    "vehicle_skus.name ILIKE :q1 OR vehicle_series.name ILIKE :q1 OR "
-                    "brands.name ILIKE :q1 OR similarity(vehicle_skus.name, :q2) > 0.1"
-                ).bindparams(q1=like_pattern, q2=q),
+                text(cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
             )
         )
         result = await self.db.execute(stmt)
         return result.scalar() or 0
 
     async def _count_brands(self, like_pattern: str, q: str) -> int:
+        cond = (
+            f"{self._like('brands.name')} OR "
+            f"{self._like('brands.description')} OR "
+            f"{self._similarity('brands.name')}"
+        )
         stmt = (
             select(func.count())
             .select_from(Brand)
             .where(
                 Brand.deleted_at.is_(None),
-                text(
-                    "brands.name ILIKE :q1 OR brands.description ILIKE :q1 OR "
-                    "similarity(brands.name, :q2) > 0.1"
-                ).bindparams(q1=like_pattern, q2=q),
+                text(cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
             )
         )
         result = await self.db.execute(stmt)

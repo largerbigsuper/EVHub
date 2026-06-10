@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Integer, Text, Boolean, DateTime, ForeignKey, Float, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, Integer, Text, Boolean, DateTime, ForeignKey, Float, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, SoftDeleteMixin
@@ -25,7 +24,7 @@ class ModBuild(Base, TimestampMixin, SoftDeleteMixin):
     legal_note: Mapped[str | None] = mapped_column(Text, comment="合规说明（is_legal=false时建议填写）")
     status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False, index=True, comment="状态：draft=草稿, pending=待审核, published=已发布, rejected=已拒绝")
     cover_image: Mapped[str | None] = mapped_column(String(500), comment="封面图URL")
-    tags: Mapped[list | None] = mapped_column(JSONB, nullable=True, comment="标签列表（如：['外观','性能','灯光']）")
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True, comment="标签列表（如：['外观','性能','灯光']）")
     view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="浏览次数")
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="发布时间")
     rejected_reason: Mapped[str | None] = mapped_column(Text, comment="拒绝原因（审核拒绝时必填）")

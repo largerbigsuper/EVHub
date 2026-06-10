@@ -3,10 +3,11 @@ uvicorn[standard]
 gunicorn
 sqlalchemy[asyncio]
 asyncpg
-alembic
+aiosqlite
 pydantic
 pydantic-settings
 redis
+fakeredis[lua]
 python-jose[cryptography]
 bcrypt
 python-multipart

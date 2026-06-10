@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Integer, Text, Boolean, DateTime, ForeignKey, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, Integer, Text, Boolean, DateTime, ForeignKey, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, SoftDeleteMixin
@@ -44,7 +43,7 @@ class Article(Base, TimestampMixin, SoftDeleteMixin):
     meta_title: Mapped[str | None] = mapped_column(String(200), comment="SEO标题（不填则用文章标题）")
     meta_description: Mapped[str | None] = mapped_column(String(500), comment="SEO描述（不填则用摘要）")
     og_image_url: Mapped[str | None] = mapped_column(String(500), comment="社交分享图（Open Graph）")
-    tags: Mapped[list | None] = mapped_column(JSONB, nullable=True, comment="标签列表（如：['电动车','电池','评测']）")
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True, comment="标签列表（如：['电动车','电池','评测']）")
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="发布时间")
     rejected_reason: Mapped[str | None] = mapped_column(Text, comment="拒绝原因（审核拒绝时必填）")
 

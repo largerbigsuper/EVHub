@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Integer, Text, Boolean, DateTime, func, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, Integer, Text, Boolean, DateTime, func, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, SoftDeleteMixin
@@ -16,7 +15,7 @@ class Topic(Base, TimestampMixin, SoftDeleteMixin):
     title: Mapped[str] = mapped_column(String(200), nullable=False, comment="帖子标题")
     content: Mapped[str] = mapped_column(Text, nullable=False, comment="帖子内容（Markdown格式）")
     author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, comment="发帖人ID")
-    tags: Mapped[list | None] = mapped_column(JSONB, nullable=True, comment="标签（如：['求助','讨论','分享']）")
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True, comment="标签（如：['求助','讨论','分享']）")
     view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="浏览数")
     reply_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="回复数（冗余缓存）")
     like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="点赞数（冗余缓存）")

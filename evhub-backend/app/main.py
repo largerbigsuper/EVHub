@@ -7,13 +7,16 @@ from typing import Optional
 
 from app.api.v1.router import router as v1_router
 from app.config import get_settings
-from app.core.database import engine
+from app.core.database import engine, init_db, dispose_engine
 from app.core.redis import redis_pool
 from sqlalchemy import text
 from fastapi import Query
 
-from app.core.response import success_response, error_response
-from app.middleware.error_handler import ErrorHandlerMiddleware
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+from app.core.exceptions import AppException
+from app.core.response import success_response
 from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.services.seo_service import generate_sitemap
@@ -24,8 +27,10 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.DATABASE_URL.startswith("sqlite"):
+        await init_db()
     yield
-    await engine.dispose()
+    await dispose_engine()
     await redis_pool.close()
 
 
@@ -38,16 +43,36 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware)
-app.add_middleware(ErrorHandlerMiddleware)
 
 app.include_router(v1_router, prefix="/api/v1")
+
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"code": exc.code, "message": exc.message, "data": None},
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    if settings.DEBUG:
+        raise exc
+    return JSONResponse(
+        status_code=500,
+        content={"code": 500, "message": "服务器内部错误", "data": None},
+    )
 
 
 @app.get("/health")

@@ -3,8 +3,9 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://ev:ev@localhost:5432/evhub"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./evhub_dev.db"
     REDIS_URL: str = "redis://localhost:6379/0"
+    USE_MEMORY_REDIS: bool = True
 
     JWT_PRIVATE_KEY: str = ""
     JWT_PUBLIC_KEY: str = ""
@@ -28,6 +29,9 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+
+    APP_URL: str = ""
+    APP_PORT: int = 8000
 
     class Config:
         env_file = ".env"
