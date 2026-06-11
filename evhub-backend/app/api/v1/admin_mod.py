@@ -18,12 +18,13 @@ router = APIRouter(prefix="/admin/mod", tags=["改装方案管理"])
 @router.get("/builds", response_model=AdminModBuildListResp)
 async def list_mod_builds(
     status: str | None = Query(None),
+    keyword: str | None = Query(None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
     service = ModService(db)
-    result = await service.list_admin(status=status, page=page, page_size=page_size)
+    result = await service.list_admin(status=status, keyword=keyword, page=page, page_size=page_size)
     return success_response(data=result["data"], meta=result["meta"])
 
 

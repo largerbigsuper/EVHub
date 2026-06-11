@@ -122,7 +122,7 @@ export default async function BrandDetailPage({ params }: Props) {
               {brand.series.map((s) => (
                 <Link
                   key={s.id}
-                  href={`/vehicles?series=${s.slug}`}
+                  href={`/vehicles?series_slug=${s.slug}`}
                   className="group overflow-hidden rounded-xl border border-border bg-surface transition-all hover:border-primary hover:shadow-lg"
                 >
                   <div className="aspect-video overflow-hidden bg-background">

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import apiClient from "@/lib/api";
-import type { BaseResponse, PageResponse, BrandItem, SkuSimpleItem } from "@/types/api";
+import type { BaseResponse, PageResponse, BrandItem, BrandDetail, SeriesItem, SkuSimpleItem } from "@/types/api";
 
 export function VehicleFilterPanel({
   brands,
@@ -18,6 +18,8 @@ export function VehicleFilterPanel({
   const searchParams = useSearchParams();
 
   const [brandSlug, setBrandSlug] = useState(initialParams.brand_slug || "");
+  const [seriesSlug, setSeriesSlug] = useState(initialParams.series_slug || "");
+  const [seriesList, setSeriesList] = useState<SeriesItem[]>([]);
   const [batteryType, setBatteryType] = useState(initialParams.battery_type || "");
   const [priceMin, setPriceMin] = useState(initialParams.price_min || "");
   const [priceMax, setPriceMax] = useState(initialParams.price_max || "");
@@ -25,9 +27,25 @@ export function VehicleFilterPanel({
   const [requiresLicense, setRequiresLicense] = useState(initialParams.requires_license || "");
   const [sortBy, setSortBy] = useState(initialParams.sort_by || "created_at");
 
+  useEffect(() => {
+    if (!brandSlug) {
+      setSeriesList([]);
+      return;
+    }
+    apiClient.get<BaseResponse<BrandDetail>>(`/brands/${brandSlug}`).then((res) => {
+      setSeriesList(res.data.data?.series || []);
+    }).catch(() => setSeriesList([]));
+  }, [brandSlug]);
+
+  const handleBrandChange = (slug: string) => {
+    setBrandSlug(slug);
+    setSeriesSlug("");
+  };
+
   const applyFilters = useCallback(() => {
     const p = new URLSearchParams();
     if (brandSlug) p.set("brand_slug", brandSlug);
+    if (seriesSlug) p.set("series_slug", seriesSlug);
     if (batteryType) p.set("battery_type", batteryType);
     if (priceMin) p.set("price_min", priceMin);
     if (priceMax) p.set("price_max", priceMax);
@@ -36,10 +54,11 @@ export function VehicleFilterPanel({
     p.set("sort_by", sortBy);
     p.set("page", "1");
     router.push(`${pathname}?${p.toString()}`);
-  }, [brandSlug, batteryType, priceMin, priceMax, rangeMin, requiresLicense, sortBy, pathname, router]);
+  }, [brandSlug, seriesSlug, batteryType, priceMin, priceMax, rangeMin, requiresLicense, sortBy, pathname, router]);
 
   const resetFilters = () => {
     setBrandSlug("");
+    setSeriesSlug("");
     setBatteryType("");
     setPriceMin("");
     setPriceMax("");
@@ -53,10 +72,20 @@ export function VehicleFilterPanel({
     <div className="space-y-5">
       <div>
         <label className="mb-1 block text-xs font-medium text-muted">品牌</label>
-        <select value={brandSlug} onChange={(e) => setBrandSlug(e.target.value)}
+        <select value={brandSlug} onChange={(e) => handleBrandChange(e.target.value)}
           className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none">
           <option value="">全部品牌</option>
           {brands.map((b) => <option key={b.id} value={b.slug}>{b.name}</option>)}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted">车系</label>
+        <select value={seriesSlug} onChange={(e) => setSeriesSlug(e.target.value)}
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          disabled={!brandSlug || seriesList.length === 0}>
+          <option value="">全部车系</option>
+          {seriesList.map((s) => <option key={s.id} value={s.slug}>{s.name}</option>)}
         </select>
       </div>
 
@@ -191,6 +220,7 @@ export function VehicleList({ searchParams }: { searchParams: Record<string, str
     setLoading(true);
     const params: Record<string, string | number> = { page, page_size: 20 };
     if (searchParams.brand_slug) params.brand_slug = searchParams.brand_slug;
+    if (searchParams.series_slug) params.series_slug = searchParams.series_slug;
     if (searchParams.battery_type) params.battery_type = searchParams.battery_type;
     if (searchParams.price_min) params.price_min = parseFloat(searchParams.price_min);
     if (searchParams.price_max) params.price_max = parseFloat(searchParams.price_max);
@@ -202,7 +232,7 @@ export function VehicleList({ searchParams }: { searchParams: Record<string, str
       setSkus(res.data.data || []);
       setMeta(res.data.meta);
     }).finally(() => setLoading(false));
-  }, [page, searchParams.brand_slug, searchParams.battery_type, searchParams.price_min, searchParams.price_max, searchParams.range_min, searchParams.requires_license, searchParams.sort_by]);
+  }, [page, searchParams.brand_slug, searchParams.series_slug, searchParams.battery_type, searchParams.price_min, searchParams.price_max, searchParams.range_min, searchParams.requires_license, searchParams.sort_by]);
 
   const router = useRouter();
   const pathname = usePathname();

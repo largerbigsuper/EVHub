@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
+import Pagination from "@/components/common/Pagination";
 import type { BaseResponse, PageResponse, BrandItem, SkuSimpleItem } from "@/types/api";
 
 export default function AdminSkusPage() {
@@ -14,6 +15,7 @@ export default function AdminSkusPage() {
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0, total_pages: 1 });
   const [filters, setFilters] = useState({
+    keyword: searchParams.get("keyword") || "",
     brand_slug: searchParams.get("brand_slug") || "",
     battery_type: searchParams.get("battery_type") || "",
     requires_license: searchParams.get("requires_license") || "",
@@ -25,6 +27,7 @@ export default function AdminSkusPage() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page: filters.page, page_size: 20 };
+      if (filters.keyword) params.keyword = filters.keyword;
       if (filters.brand_slug) params.brand_slug = filters.brand_slug;
       if (filters.battery_type) params.battery_type = filters.battery_type;
       if (filters.requires_license) params.requires_license = parseInt(filters.requires_license);
@@ -45,6 +48,7 @@ export default function AdminSkusPage() {
 
   const applyFilters = () => {
     const p = new URLSearchParams();
+    if (filters.keyword) p.set("keyword", filters.keyword);
     if (filters.brand_slug) p.set("brand_slug", filters.brand_slug);
     if (filters.battery_type) p.set("battery_type", filters.battery_type);
     if (filters.requires_license) p.set("requires_license", filters.requires_license);
@@ -77,6 +81,12 @@ export default function AdminSkusPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4">
+        <div>
+          <label className="mb-1 block text-xs text-muted">关键词</label>
+          <input type="text" placeholder="搜索名称/标识..."
+            value={filters.keyword} onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
+            className="w-44 rounded border border-border px-2 py-1.5 text-sm" />
+        </div>
         <div>
           <label className="mb-1 block text-xs text-muted">品牌</label>
           <select value={filters.brand_slug} onChange={(e) => setFilters({ ...filters, brand_slug: e.target.value })}
@@ -162,14 +172,13 @@ export default function AdminSkusPage() {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-muted">
-        <span>共 {meta.total} 条，第 {meta.page}/{meta.total_pages} 页</span>
-        <div className="flex gap-1">
-          <button disabled={filters.page <= 1} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
-            className="rounded border border-border px-3 py-1 hover:bg-background disabled:opacity-50">上一页</button>
-          <button disabled={filters.page >= meta.total_pages} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
-            className="rounded border border-border px-3 py-1 hover:bg-background disabled:opacity-50">下一页</button>
-        </div>
+      <div className="mt-4 flex flex-col items-center gap-2">
+        <span className="text-sm text-muted">共 {meta.total} 条</span>
+        <Pagination
+          page={filters.page}
+          totalPages={meta.total_pages}
+          onPageChange={(p) => setFilters({ ...filters, page: p })}
+        />
       </div>
     </div>
   );

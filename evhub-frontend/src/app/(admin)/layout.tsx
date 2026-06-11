@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { logout } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "仪表盘", icon: "📊" },
@@ -18,12 +19,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triedAuthRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated && user === null) {
-      router.push("/login");
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    clearUser();
+    router.push("/login");
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      triedAuthRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (!isAuthenticated) {
+        triedAuthRef.current = true;
+        router.push("/login");
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [isAuthenticated, user, router]);
+
+  const breadcrumbSegments = pathname.split("/").filter(Boolean).slice(1);
 
   if (!isAuthenticated) {
     return (
@@ -32,8 +62,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     );
   }
-
-  const breadcrumbSegments = pathname.split("/").filter(Boolean).slice(1);
 
   return (
     <div className="flex min-h-screen">
@@ -90,10 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="border-t border-border pt-4">
             <div className="mb-1 text-sm font-medium">{user?.nickname || user?.username}</div>
             <button
-              onClick={() => {
-                clearUser();
-                router.push("/login");
-              }}
+              onClick={handleLogout}
               className="text-sm text-muted hover:text-danger transition-colors"
             >
               退出登录
@@ -151,6 +176,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               查看前台 →
             </Link>
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm hover:bg-background transition-colors"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {(user?.nickname || user?.username || "U").charAt(0).toUpperCase()}
+                </span>
+                <span className="hidden sm:inline text-sm">{user?.nickname || user?.username}</span>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-border bg-surface py-1 shadow-lg z-50">
+                  <div className="px-3 py-1.5 text-xs text-muted border-b border-border">
+                    {user?.email}
+                  </div>
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-3 py-2 text-sm hover:bg-background transition-colors"
+                  >
+                    仪表盘
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-danger hover:bg-background transition-colors"
+                  >
+                    退出登录
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

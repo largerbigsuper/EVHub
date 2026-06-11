@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import apiClient from "@/lib/api";
+import Pagination from "@/components/common/Pagination";
 import type { PageResponse, ArticleItem, ArticleDetail } from "@/types/api";
 
 const TABS = [
@@ -26,6 +27,9 @@ export default function AdminContentListPage() {
   const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0, total_pages: 0 });
   const [tab, setTab] = useState("");
   const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState("");
+  const [catId, setCatId] = useState("");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -36,13 +40,15 @@ export default function AdminContentListPage() {
     try {
       const params: Record<string, unknown> = { page, page_size: 20 };
       if (tab) params.status = tab;
+      if (keyword.trim()) params.keyword = keyword.trim();
+      if (catId) params.category_id = catId;
       const res = await apiClient.get<PageResponse<ArticleItem>>("/admin/articles", { params });
       setArticles(res.data.data || []);
       setMeta(res.data.meta);
     } finally {
       setLoading(false);
     }
-  }, [tab, page]);
+  }, [tab, page, keyword, catId]);
 
   const fetchPendingCount = useCallback(async () => {
     try {
@@ -57,6 +63,11 @@ export default function AdminContentListPage() {
 
   useEffect(() => { fetchArticles(); }, [fetchArticles]);
   useEffect(() => { fetchPendingCount(); }, [fetchPendingCount]);
+  useEffect(() => {
+    apiClient.get<{ data: { id: string; name: string }[] }>("/articles/categories").then(
+      (res) => setCategories(res.data.data || []),
+    ).catch(() => {});
+  }, []);
 
   const handlePublish = async (id: string) => {
     if (!confirm("确定发布此文章？")) return;
@@ -118,6 +129,35 @@ export default function AdminContentListPage() {
             新建文章
           </Link>
         </div>
+      </div>
+
+      {/* Search & Filter */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          type="text"
+          placeholder="搜索标题/摘要..."
+          value={keyword}
+          onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+          className="w-64 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        />
+        <select
+          value={catId}
+          onChange={(e) => { setCatId(e.target.value); setPage(1); }}
+          className="rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        >
+          <option value="">全部分类</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        {(keyword || catId) && (
+          <button
+            onClick={() => { setKeyword(""); setCatId(""); setPage(1); }}
+            className="text-sm text-muted hover:text-foreground"
+          >
+            清除筛选
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -237,41 +277,11 @@ export default function AdminContentListPage() {
           </div>
 
           {/* Pagination */}
-          {meta.total_pages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="rounded px-3 py-1.5 text-sm border border-border hover:bg-background disabled:opacity-40"
-              >
-                上一页
-              </button>
-              {Array.from({ length: meta.total_pages }, (_, i) => i + 1)
-                .filter((p) => p === 1 || p === meta.total_pages || Math.abs(p - page) <= 1)
-                .map((p, idx, arr) => (
-                  <span key={p}>
-                    {idx > 0 && arr[idx - 1] !== p - 1 && (
-                      <span className="px-1 text-muted">...</span>
-                    )}
-                    <button
-                      onClick={() => setPage(p)}
-                      className={`rounded px-3 py-1.5 text-sm ${
-                        p === page ? "bg-primary text-white" : "border border-border hover:bg-background"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  </span>
-                ))}
-              <button
-                onClick={() => setPage((p) => Math.min(meta.total_pages, p + 1))}
-                disabled={page >= meta.total_pages}
-                className="rounded px-3 py-1.5 text-sm border border-border hover:bg-background disabled:opacity-40"
-              >
-                下一页
-              </button>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={meta.total_pages}
+            onPageChange={setPage}
+          />
         </>
       )}
 

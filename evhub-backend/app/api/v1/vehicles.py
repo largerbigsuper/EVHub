@@ -19,11 +19,13 @@ async def get_series(slug: str, db: AsyncSession = Depends(get_db)):
 @router.get("/skus", response_model=SkuSearchResp)
 async def search_skus(
     brand_slug: str | None = Query(None),
+    series_slug: str | None = Query(None),
     battery_type: str | None = Query(None),
     price_min: float | None = Query(None),
     price_max: float | None = Query(None),
     range_min: int | None = Query(None),
     requires_license: bool | None = Query(None),
+    keyword: str | None = Query(None),
     sort_by: str = Query("created_at"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -32,11 +34,13 @@ async def search_skus(
     service = VehicleService(db)
     result = await service.search_skus(
         brand_slug=brand_slug,
+        series_slug=series_slug,
         battery_type=battery_type,
         price_min=price_min,
         price_max=price_max,
         range_min=range_min,
         requires_license=requires_license,
+        keyword=keyword,
         sort_by=sort_by,
         page=page,
         page_size=page_size,

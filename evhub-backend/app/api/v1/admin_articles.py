@@ -102,13 +102,18 @@ async def list_pending_articles(
 @router.get("/articles", response_model=AdminArticleListResp)
 async def list_admin_articles(
     status: str | None = Query(None),
+    keyword: str | None = Query(None),
+    category_id: uuid.UUID | None = Query(None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     service = ArticleService(db)
-    result = await service.list_admin_articles(status=status, page=page, page_size=page_size)
+    result = await service.list_admin_articles(
+        status=status, keyword=keyword, category_id=category_id,
+        page=page, page_size=page_size,
+    )
     return success_response(data=result["data"], meta=result["meta"])
 
 

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import apiClient from "@/lib/api";
+import ImageUpload from "@/components/common/ImageUpload";
+import PreviewModal from "@/components/common/PreviewModal";
 import type { BaseResponse, ArticleDetail, CategoryItem } from "@/types/api";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
@@ -32,6 +34,7 @@ export default function ArticleEditorPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState("");
   const [tagInput, setTagInput] = useState("");
 
@@ -227,6 +230,12 @@ export default function ArticleEditorPage() {
           </div>
           <div className="mt-3 flex gap-2">
             <button
+              onClick={() => setPreviewOpen(true)}
+              className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background"
+            >
+              预览
+            </button>
+            <button
               onClick={() => handleSave("save")}
               disabled={saving}
               className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background disabled:opacity-50"
@@ -328,13 +337,11 @@ export default function ArticleEditorPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-muted">封面图 URL</label>
-            <input
-              type="text"
+            <label className="mb-1 block text-xs text-muted">封面图</label>
+            <ImageUpload
               value={form.cover_image}
-              onChange={(e) => updateField("cover_image", e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded border border-border px-2 py-1.5 text-sm focus:border-primary focus:outline-none"
+              onChange={(url) => updateField("cover_image", url)}
+              folder="articles"
             />
           </div>
 
@@ -362,17 +369,28 @@ export default function ArticleEditorPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-muted">OG Image URL</label>
-            <input
-              type="text"
+            <label className="mb-1 block text-xs text-muted">OG Image</label>
+            <ImageUpload
               value={form.og_image_url}
-              onChange={(e) => updateField("og_image_url", e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded border border-border px-2 py-1.5 text-sm focus:border-primary focus:outline-none"
+              onChange={(url) => updateField("og_image_url", url)}
+              folder="seo"
             />
           </div>
         </div>
       </div>
+
+      <PreviewModal
+        type="article"
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        data={{
+          title: form.title,
+          content: form.content,
+          excerpt: form.excerpt,
+          cover_image: form.cover_image,
+          tags: form.tags,
+        }}
+      />
     </div>
   );
 }

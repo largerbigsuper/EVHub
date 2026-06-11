@@ -12,6 +12,15 @@ class CommentRepo(BaseRepository[Comment]):
     def __init__(self, db: AsyncSession):
         super().__init__(Comment, db)
 
+    async def get_by_id(self, cid: uuid.UUID) -> Comment | None:
+        stmt = (
+            select(Comment)
+            .options(selectinload(Comment.user))
+            .where(Comment.id == cid, Comment.deleted_at.is_(None))
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def list_comments(
         self,
         target_type: str,

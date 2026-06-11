@@ -127,8 +127,8 @@ class VehicleService:
         self.sku_repo = VehicleSkuRepository(db)
         self.attr_repo = AttributeRepository(db)
 
-    async def list_brands(self) -> list[dict]:
-        brands = await self.brand_repo.get_all_featured_first()
+    async def list_brands(self, keyword: str | None = None) -> list[dict]:
+        brands = await self.brand_repo.get_all_featured_first(keyword=keyword)
         return [_format_brand(b) for b in brands]
 
     async def get_brand(self, slug: str) -> dict:
@@ -139,11 +139,22 @@ class VehicleService:
         result["series"] = [_format_series(s) for s in (brand.series or [])]
         return result
 
-    async def create_brand(self, data: dict, operator_id: str) -> dict:
+    async def get_brand_by_id(self, brand_id: uuid.UUID) -> dict:
+        brand = await self.brand_repo.get_by_id(brand_id)
+        if not brand:
+            raise NotFoundError("品牌")
+        return _format_brand(brand)
+
+    async def list_series(self, keyword: str | None = None, brand_id: uuid.UUID | None = None) -> list[dict]:
+        series_list = await self.series_repo.search(keyword=keyword, brand_id=brand_id)
+        return [_format_series(s) for s in series_list]
+
+    async def get_series(self, slug: str) -> dict:
         if await self.brand_repo.check_slug_exists(data["slug"]):
             raise DuplicateError("品牌标识")
         brand = await self.brand_repo.create(**data)
         await self._write_audit(uuid.UUID(operator_id), "CREATE_BRAND", "brand", brand.id, data)
+        brand = await self.brand_repo.get_by_id(brand.id)
         return _format_brand(brand)
 
     async def update_brand(self, brand_id: str, data: dict, operator_id: str) -> dict:
@@ -177,6 +188,7 @@ class VehicleService:
     async def create_series(self, data: dict, operator_id: str) -> dict:
         series = await self.series_repo.create(**data)
         await self._write_audit(uuid.UUID(operator_id), "CREATE_SERIES", "vehicle_series", series.id, data)
+        series = await self.series_repo.get_by_id(series.id)
         return _format_series(series)
 
     async def update_series(self, series_id: str, data: dict, operator_id: str) -> dict:
@@ -254,6 +266,7 @@ class VehicleService:
     async def create_sku(self, data: dict, operator_id: str) -> dict:
         sku = await self.sku_repo.create(**data)
         await self._write_audit(uuid.UUID(operator_id), "CREATE_SKU", "vehicle_sku", sku.id, data)
+        sku = await self.sku_repo.get_by_id(sku.id)
         return _format_sku(sku)
 
     async def update_sku(self, sku_id: str, data: dict, operator_id: str) -> dict:

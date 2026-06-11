@@ -42,6 +42,7 @@ class ModBuildRepo(BaseRepository[ModBuild]):
         self,
         vehicle_sku_id: uuid.UUID | None = None,
         tag: str | None = None,
+        keyword: str | None = None,
         is_legal: bool | None = None,
         status: str | None = None,
         author_id: uuid.UUID | None = None,
@@ -64,6 +65,14 @@ class ModBuildRepo(BaseRepository[ModBuild]):
 
         if is_legal is not None:
             conditions.append(ModBuild.is_legal == is_legal)
+
+        if keyword:
+            conditions.append(
+                or_(
+                    ModBuild.title.ilike(f"%{keyword}%"),
+                    ModBuild.description.ilike(f"%{keyword}%"),
+                )
+            )
 
         if status:
             conditions.append(ModBuild.status == status)

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.core.response import BaseResponse, PageMeta, PageResponse
+from app.schemas.base import ORMSchema
 
 
 class RegisterRequest(BaseModel):
@@ -18,13 +19,14 @@ class TokenResponseData(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    role: str = "user"
 
 
 class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-class UserResponseData(BaseModel):
+class UserResponseData(ORMSchema):
     id: str
     username: str
     nickname: str | None = None
@@ -32,9 +34,6 @@ class UserResponseData(BaseModel):
     avatar: str | None = None
     role: str = "user"
     status: int = 1
-
-    class Config:
-        from_attributes = True
 
 
 class UserUpdateRequest(BaseModel):

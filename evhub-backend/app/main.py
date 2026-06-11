@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from typing import Optional
 
 from app.api.v1.router import router as v1_router
@@ -56,6 +57,11 @@ app.add_middleware(RateLimitMiddleware)
 
 app.include_router(v1_router, prefix="/api/v1")
 
+import os
+from app.services.storage.local import UPLOAD_DIR
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(UPLOAD_DIR)), name="media")
+
 
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
@@ -67,11 +73,13 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    import traceback
+    message = f"{type(exc).__name__}: {exc}" if settings.DEBUG else "服务器内部错误"
     if settings.DEBUG:
-        raise exc
+        traceback.print_exc()
     return JSONResponse(
         status_code=500,
-        content={"code": 500, "message": "服务器内部错误", "data": None},
+        content={"code": 500, "message": message, "data": None},
     )
 
 

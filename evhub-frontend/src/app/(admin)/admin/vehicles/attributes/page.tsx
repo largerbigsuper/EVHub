@@ -8,7 +8,19 @@ import type { BaseResponse, AttributeGroupDetail, AttributeDefinitionItem } from
 export default function AdminAttributesPage() {
   const [groups, setGroups] = useState<AttributeGroupDetail[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  const filteredGroups = search.trim()
+    ? groups
+        .map((g) => ({
+          ...g,
+          definitions: g.definitions?.filter(
+            (d) => d.name.includes(search) || d.code.includes(search) || g.name.includes(search)
+          ),
+        }))
+        .filter((g) => g.name.includes(search) || (g.definitions && g.definitions.length > 0))
+    : groups;
 
   const fetchGroups = useCallback(async () => {
     const res = await apiClient.get<BaseResponse<AttributeGroupDetail[]>>("/admin/attributes/groups");
@@ -88,8 +100,18 @@ export default function AdminAttributesPage() {
         <AddGroupButton onSave={handleGroupSave} />
       </div>
 
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="搜索属性组或属性名称/编码..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-64 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        />
+      </div>
+
       <div className="space-y-3">
-        {groups.map((group) => (
+        {filteredGroups.map((group) => (
           <div key={group.id} className="rounded-lg border border-border bg-surface">
             <button onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
               className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium hover:bg-background">

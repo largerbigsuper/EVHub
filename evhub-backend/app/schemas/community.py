@@ -1,6 +1,8 @@
 import uuid
 from pydantic import BaseModel, Field
 
+from app.schemas.base import ORMSchema
+
 
 # ---- Request Schemas ----
 
@@ -29,17 +31,14 @@ class FavoriteAction(BaseModel):
 
 # ---- Response Data Schemas ----
 
-class AuthorInfo(BaseModel):
+class AuthorInfo(ORMSchema):
     id: str
     username: str
     nickname: str | None = None
     avatar: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class CommentReplyItem(BaseModel):
+class CommentReplyItem(ORMSchema):
     id: str
     user: AuthorInfo | None = None
     content: str
@@ -48,11 +47,8 @@ class CommentReplyItem(BaseModel):
     like_count: int = 0
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class CommentItem(BaseModel):
+class CommentItem(ORMSchema):
     id: str
     target_type: str
     target_id: str
@@ -64,11 +60,8 @@ class CommentItem(BaseModel):
     created_at: str | None = None
     replies: list[CommentReplyItem] = []
 
-    class Config:
-        from_attributes = True
 
-
-class TopicItem(BaseModel):
+class TopicItem(ORMSchema):
     id: str
     title: str
     content: str
@@ -83,11 +76,8 @@ class TopicItem(BaseModel):
     status: str
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class TopicDetail(BaseModel):
+class TopicDetail(ORMSchema):
     id: str
     title: str
     content: str
@@ -102,11 +92,8 @@ class TopicDetail(BaseModel):
     status: str
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class NotificationItem(BaseModel):
+class NotificationItem(ORMSchema):
     id: str
     type: str
     title: str
@@ -114,9 +101,6 @@ class NotificationItem(BaseModel):
     link: str | None = None
     is_read: bool = False
     created_at: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class LikeStatus(BaseModel):

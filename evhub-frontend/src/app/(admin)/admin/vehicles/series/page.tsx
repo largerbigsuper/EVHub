@@ -3,35 +3,37 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import apiClient from "@/lib/api";
+import ImageUpload from "@/components/common/ImageUpload";
+import PreviewModal from "@/components/common/PreviewModal";
 import type { BaseResponse, BrandItem, SeriesItem } from "@/types/api";
 
 export default function AdminSeriesPage() {
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [series, setSeries] = useState<SeriesItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [keyword, setKeyword] = useState("");
+  const [brandFilter, setBrandFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ brand_id: "", name: "", slug: "", cover_image: "", description: "", sort_order: 0 });
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState("");
 
   const fetchData = useCallback(async () => {
-    const brandsRes = await apiClient.get<BaseResponse<BrandItem[]>>("/brands");
-    const brandList = brandsRes.data.data || [];
-    setBrands(brandList);
-
-    const results = await Promise.allSettled(
-      brandList.map((b) => apiClient.get<BaseResponse<BrandItem & { series: SeriesItem[] }>>(`/brands/${b.slug}`))
-    );
-    const allSeries: SeriesItem[] = [];
-    results.forEach((r) => {
-      if (r.status === "fulfilled" && r.value.data.data?.series) {
-        allSeries.push(...r.value.data.data.series);
-      }
-    });
-    setSeries(allSeries);
+    const [brandsRes, seriesRes] = await Promise.all([
+      apiClient.get<BaseResponse<BrandItem[]>>("/brands"),
+      apiClient.get<BaseResponse<SeriesItem[]>>("/admin/series", {
+        params: {
+          ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+          ...(brandFilter ? { brand_id: brandFilter } : {}),
+        },
+      }),
+    ]);
+    setBrands(brandsRes.data.data || []);
+    setSeries(seriesRes.data.data || []);
     setLoading(false);
-  }, []);
+  }, [keyword, brandFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -107,6 +109,31 @@ export default function AdminSeriesPage() {
         </button>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          type="text"
+          placeholder="搜索车系名称/标识..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          className="w-64 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        />
+        <select
+          value={brandFilter}
+          onChange={(e) => setBrandFilter(e.target.value)}
+          className="rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        >
+          <option value="">全部品牌</option>
+          {brands.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+        {(keyword || brandFilter) && (
+          <button onClick={() => { setKeyword(""); setBrandFilter(""); }} className="text-sm text-muted hover:text-foreground">
+            清除筛选
+          </button>
+        )}
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-background">
@@ -175,9 +202,12 @@ export default function AdminSeriesPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-sm text-muted">封面图 URL</label>
-                <input value={form.cover_image} onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+                <label className="mb-1 block text-sm text-muted">封面图</label>
+                <ImageUpload
+                  value={form.cover_image}
+                  onChange={(url) => setForm({ ...form, cover_image: url })}
+                  folder="series"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm text-muted">描述</label>
@@ -185,6 +215,7 @@ export default function AdminSeriesPage() {
                   className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none" />
               </div>
               <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setPreviewOpen(true)} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background">预览</button>
                 <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background">取消</button>
                 <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark disabled:opacity-50">
                   {saving ? "保存中..." : "保存"}
@@ -194,6 +225,17 @@ export default function AdminSeriesPage() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        type="series"
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        data={{
+          name: form.name,
+          cover_image: form.cover_image,
+          description: form.description,
+        }}
+      />
     </div>
   );
 }

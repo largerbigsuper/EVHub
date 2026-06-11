@@ -64,7 +64,7 @@ class ArticleService:
         data["status"] = "draft"
         article = await self.article_repo.create(**data)
         await self._write_audit(uuid.UUID(user_id), "CREATE_ARTICLE", "article", article.id, data)
-        return article
+        return await self.article_repo.get_by_id(article.id)
 
     async def update_article(self, article_id: uuid.UUID, data: dict, user_id: str, is_admin: bool = False) -> Article:
         article = await self.article_repo.get_by_id(article_id)
@@ -81,7 +81,7 @@ class ArticleService:
 
         article = await self.article_repo.update(article_id, **data)
         await self._write_audit(uuid.UUID(user_id), "UPDATE_ARTICLE", "article", article_id, data)
-        return article
+        return await self.article_repo.get_by_id(article_id)
 
     async def delete_article(self, article_id: uuid.UUID, user_id: str) -> bool:
         article = await self.article_repo.get_by_id(article_id)
@@ -144,10 +144,17 @@ class ArticleService:
         }
 
     async def list_admin_articles(
-        self, status: str | None = None, page: int = 1, page_size: int = 20,
+        self, status: str | None = None, keyword: str | None = None,
+        category_id: uuid.UUID | None = None, page: int = 1, page_size: int = 20,
     ) -> dict:
+        category_slug = None
+        if category_id:
+            cat = await self.category_repo.get_by_id(category_id)
+            if cat:
+                category_slug = cat.slug
         articles, total = await self.article_repo.search(
-            status=status, page=page, page_size=page_size,
+            status=status, keyword=keyword, category_slug=category_slug,
+            page=page, page_size=page_size,
         )
         return {
             "data": articles,

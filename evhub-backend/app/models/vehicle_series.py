@@ -22,5 +22,5 @@ class VehicleSeries(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="软删除时间")
 
-    brand: Mapped["Brand"] = relationship(back_populates="series")
+    brand: Mapped["Brand"] = relationship(back_populates="series", lazy="selectin")
     skus: Mapped[list["VehicleSku"]] = relationship(back_populates="series", lazy="selectin")

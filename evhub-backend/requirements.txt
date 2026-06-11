@@ -13,5 +13,6 @@ bcrypt
 python-multipart
 celery
 httpx
+qiniu
 pytest
 pytest-asyncio

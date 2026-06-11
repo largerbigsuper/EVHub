@@ -7,6 +7,7 @@ from app.api.v1 import community
 from app.api.v1 import search
 from app.api.v1 import seo
 from app.api.v1 import dashboard
+from app.api.v1 import upload
 
 router = APIRouter()
 
@@ -24,3 +25,4 @@ router.include_router(community.router)
 router.include_router(search.router)
 router.include_router(seo.router)
 router.include_router(dashboard.router)
+router.include_router(upload.router)

@@ -32,5 +32,5 @@ class VehicleSku(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="软删除时间")
 
-    series: Mapped["VehicleSeries"] = relationship(back_populates="skus")
+    series: Mapped["VehicleSeries"] = relationship(back_populates="skus", lazy="selectin")
     attribute_values: Mapped[list["VehicleAttributeValue"]] = relationship(back_populates="sku", lazy="selectin")

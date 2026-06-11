@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import apiClient from "@/lib/api";
+import ImageUpload from "@/components/common/ImageUpload";
+import PreviewModal from "@/components/common/PreviewModal";
 import type { BaseResponse, BrandDetail, SeriesItem } from "@/types/api";
 
 export default function AdminBrandEditPage() {
@@ -13,6 +15,7 @@ export default function AdminBrandEditPage() {
   const [series, setSeries] = useState<SeriesItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState({ name: "", slug: "", logo: "", country: "", founded_year: "", website: "", description: "", is_featured: false, sort_order: 0 });
@@ -94,14 +97,12 @@ export default function AdminBrandEditPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-sm text-muted">Logo URL</label>
-                <div className="flex items-center gap-3">
-                  {form.logo && (
-                    <img src={form.logo} alt="Preview" className="h-12 w-12 rounded-lg object-contain bg-background" />
-                  )}
-                  <input value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })}
-                    className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none" />
-                </div>
+                <label className="mb-1 block text-sm text-muted">Logo</label>
+                <ImageUpload
+                  value={form.logo}
+                  onChange={(url) => setForm({ ...form, logo: url })}
+                  folder="brands"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -135,7 +136,10 @@ export default function AdminBrandEditPage() {
                     className="w-20 rounded-lg border border-border px-2 py-1 text-sm" />
                 </div>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setPreviewOpen(true)} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background">
+                  预览
+                </button>
                 <button type="submit" disabled={saving}
                   className="rounded-lg bg-primary px-6 py-2 text-sm text-white hover:bg-primary-dark disabled:opacity-50">
                   {saving ? "保存中..." : "保存修改"}
@@ -144,6 +148,20 @@ export default function AdminBrandEditPage() {
             </form>
           </div>
         </div>
+
+        <PreviewModal
+          type="brand"
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          data={{
+            name: form.name,
+            logo: form.logo,
+            country: form.country,
+            founded_year: form.founded_year,
+            website: form.website,
+            description: form.description,
+          }}
+        />
 
         <div className="rounded-lg border border-border bg-surface p-6">
           <div className="mb-3 flex items-center justify-between">

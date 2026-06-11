@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { login } from "@/lib/auth";
+import { login, setUserRole } from "@/lib/auth";
 import { useAuthStore } from "@/stores/auth.store";
 import apiClient from "@/lib/api";
 
@@ -36,8 +36,15 @@ export default function LoginPage() {
     try {
       await login(data.login, data.password);
       const { data: meData } = await apiClient.get("/auth/me");
+      const role = meData.data?.role || "user";
+      setUserRole(role);
       setUser(meData.data);
-      router.push("/");
+      const redirect = new URLSearchParams(window.location.search).get("redirect");
+      if (role === "admin" || role === "editor") {
+        router.push(redirect || "/admin/dashboard");
+      } else {
+        router.push(redirect || "/");
+      }
       router.refresh();
     } catch (err: any) {
       const msg = err.response?.data?.message;

@@ -70,7 +70,7 @@ class ModService:
             await self.repo.save_parts(build.id, parts_data)
 
         await self._write_audit(uuid.UUID(user_id), "CREATE_MOD_BUILD", "mod_build", build.id)
-        return build
+        return await self.repo.get_by_id(build.id)
 
     async def update_build(self, build_id: uuid.UUID, data: dict, user_id: str) -> ModBuild:
         build = await self.repo.get_by_id(build_id)
@@ -136,10 +136,11 @@ class ModService:
         }
 
     async def list_admin(
-        self, status: str | None = None, page: int = 1, page_size: int = 20,
+        self, status: str | None = None, keyword: str | None = None,
+        page: int = 1, page_size: int = 20,
     ) -> dict:
         builds, total = await self.repo.search(
-            status=status, page=page, page_size=page_size,
+            status=status, keyword=keyword, page=page, page_size=page_size,
         )
         return {
             "data": builds,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -10,9 +10,9 @@ router = APIRouter(prefix="/brands", tags=["品牌"])
 
 
 @router.get("", response_model=BrandListResp)
-async def list_brands(db: AsyncSession = Depends(get_db)):
+async def list_brands(keyword: str | None = Query(None), db: AsyncSession = Depends(get_db)):
     service = VehicleService(db)
-    brands = await service.list_brands()
+    brands = await service.list_brands(keyword=keyword)
     return success_response(data=brands)
 
 

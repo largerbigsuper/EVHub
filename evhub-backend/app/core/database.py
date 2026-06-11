@@ -1,3 +1,6 @@
+import json
+import uuid
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.config import get_settings
 
@@ -5,9 +8,22 @@ settings = get_settings()
 
 _is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 
+
+def _json_serializer(obj):
+    return json.dumps(obj, default=_uuid_handler)
+
+
+def _uuid_handler(obj):
+    if isinstance(obj, uuid.UUID):
+        return str(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
 if _is_sqlite:
     engine = create_async_engine(
         settings.DATABASE_URL,
+        json_serializer=_json_serializer,
+        json_deserializer=json.loads,
         echo=settings.DEBUG,
     )
 else:
@@ -16,6 +32,8 @@ else:
         pool_size=10,
         max_overflow=20,
         pool_pre_ping=True,
+        json_serializer=_json_serializer,
+        json_deserializer=json.loads,
         echo=settings.DEBUG,
     )
 

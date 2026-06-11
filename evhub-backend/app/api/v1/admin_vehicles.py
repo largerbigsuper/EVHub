@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.exceptions import NotFoundError
 from app.core.response import success_response
 from app.dependencies import get_current_user
 from app.schemas.vehicle import (
@@ -64,6 +67,29 @@ async def delete_brand(
     return success_response(message="品牌已删除")
 
 
+@router.get("/brands/{brand_id}", response_model=BrandResp)
+async def get_brand(
+    brand_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = VehicleService(db)
+    brand = await service.get_brand_by_id(uuid.UUID(brand_id))
+    return success_response(data=brand)
+
+
+@router.get("/series")
+async def list_series(
+    keyword: str | None = Query(None),
+    brand_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    service = VehicleService(db)
+    bid = uuid.UUID(brand_id) if brand_id else None
+    series_list = await service.list_series(keyword=keyword, brand_id=bid)
+    return success_response(data=series_list)
+
+
 @router.post("/series", response_model=SeriesResp)
 async def create_series(
     req: SeriesCreate,
@@ -97,6 +123,20 @@ async def delete_series(
     service = VehicleService(db)
     await service.delete_series(series_id, current_user["user_id"])
     return success_response(message="车系已删除")
+
+
+@router.get("/skus/{sku_id}", response_model=SkuResp)
+async def get_sku(
+    sku_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.repositories.vehicle_repo import VehicleSkuRepository
+    repo = VehicleSkuRepository(db)
+    sku = await repo.get_by_id(uuid.UUID(sku_id))
+    if not sku:
+        raise NotFoundError("车型")
+    return success_response(data=sku)
 
 
 @router.post("/skus", response_model=SkuResp)

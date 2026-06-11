@@ -15,6 +15,15 @@ class BrandRepository(BaseRepository[Brand]):
     def __init__(self, db: AsyncSession):
         super().__init__(Brand, db)
 
+    async def get_by_id(self, bid: uuid.UUID) -> Brand | None:
+        stmt = (
+            select(Brand)
+            .options(selectinload(Brand.series))
+            .where(Brand.id == bid, Brand.deleted_at.is_(None))
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_by_slug(self, slug: str) -> Brand | None:
         stmt = (
             select(Brand)
@@ -24,12 +33,20 @@ class BrandRepository(BaseRepository[Brand]):
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all_featured_first(self) -> list[Brand]:
+    async def get_all_featured_first(self, keyword: str | None = None) -> list[Brand]:
         stmt = (
             select(Brand)
             .where(Brand.deleted_at.is_(None))
             .order_by(Brand.is_featured.desc(), Brand.sort_order.asc(), Brand.name.asc())
         )
+        if keyword:
+            stmt = stmt.where(
+                or_(
+                    Brand.name.ilike(f"%{keyword}%"),
+                    Brand.slug.ilike(f"%{keyword}%"),
+                    Brand.country.ilike(f"%{keyword}%"),
+                )
+            )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -45,6 +62,18 @@ class VehicleSeriesRepository(BaseRepository[VehicleSeries]):
     def __init__(self, db: AsyncSession):
         super().__init__(VehicleSeries, db)
 
+    async def get_by_id(self, sid: uuid.UUID) -> VehicleSeries | None:
+        stmt = (
+            select(VehicleSeries)
+            .options(
+                selectinload(VehicleSeries.brand),
+                selectinload(VehicleSeries.skus),
+            )
+            .where(VehicleSeries.id == sid, VehicleSeries.deleted_at.is_(None))
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_by_slug(self, slug: str) -> VehicleSeries | None:
         stmt = (
             select(VehicleSeries)
@@ -57,10 +86,41 @@ class VehicleSeriesRepository(BaseRepository[VehicleSeries]):
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def search(self, keyword: str | None = None, brand_id: uuid.UUID | None = None) -> list[VehicleSeries]:
+        stmt = (
+            select(VehicleSeries)
+            .options(selectinload(VehicleSeries.brand), selectinload(VehicleSeries.skus))
+            .where(VehicleSeries.deleted_at.is_(None))
+        )
+        if keyword:
+            stmt = stmt.where(
+                or_(
+                    VehicleSeries.name.ilike(f"%{keyword}%"),
+                    VehicleSeries.slug.ilike(f"%{keyword}%"),
+                )
+            )
+        if brand_id:
+            stmt = stmt.where(VehicleSeries.brand_id == brand_id)
+        stmt = stmt.order_by(VehicleSeries.sort_order.asc(), VehicleSeries.name.asc())
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
 
 class VehicleSkuRepository(BaseRepository[VehicleSku]):
     def __init__(self, db: AsyncSession):
         super().__init__(VehicleSku, db)
+
+    async def get_by_id(self, sid: uuid.UUID) -> VehicleSku | None:
+        stmt = (
+            select(VehicleSku)
+            .options(
+                selectinload(VehicleSku.series).selectinload(VehicleSeries.brand),
+                selectinload(VehicleSku.attribute_values).selectinload(VehicleAttributeValue.attribute).selectinload(AttributeDefinition.group),
+            )
+            .where(VehicleSku.id == sid, VehicleSku.deleted_at.is_(None))
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def get_by_slug(self, slug: str) -> VehicleSku | None:
         stmt = (
@@ -89,11 +149,13 @@ class VehicleSkuRepository(BaseRepository[VehicleSku]):
     async def search(
         self,
         brand_slug: str | None = None,
+        series_slug: str | None = None,
         battery_type: str | None = None,
         price_min: float | None = None,
         price_max: float | None = None,
         range_min: int | None = None,
         requires_license: bool | None = None,
+        keyword: str | None = None,
         tags: list[str] | None = None,
         sort_by: str = "created_at",
         page: int = 1,
@@ -106,9 +168,31 @@ class VehicleSkuRepository(BaseRepository[VehicleSku]):
 
         count_stmt = select(func.count()).select_from(VehicleSku).where(VehicleSku.deleted_at.is_(None))
 
+        if brand_slug or series_slug:
+            stmt = stmt.join(VehicleSeries)
+            count_stmt = count_stmt.join(VehicleSeries)
+
         if brand_slug:
-            stmt = stmt.join(VehicleSeries).join(Brand).where(Brand.slug == brand_slug)
-            count_stmt = count_stmt.join(VehicleSeries).join(Brand).where(Brand.slug == brand_slug)
+            stmt = stmt.join(Brand).where(Brand.slug == brand_slug)
+            count_stmt = count_stmt.join(Brand).where(Brand.slug == brand_slug)
+
+        if series_slug:
+            stmt = stmt.where(VehicleSeries.slug == series_slug)
+            count_stmt = count_stmt.where(VehicleSeries.slug == series_slug)
+
+        if keyword:
+            stmt = stmt.where(
+                or_(
+                    VehicleSku.name.ilike(f"%{keyword}%"),
+                    VehicleSku.slug.ilike(f"%{keyword}%"),
+                )
+            )
+            count_stmt = count_stmt.where(
+                or_(
+                    VehicleSku.name.ilike(f"%{keyword}%"),
+                    VehicleSku.slug.ilike(f"%{keyword}%"),
+                )
+            )
 
         if battery_type:
             stmt = stmt.where(VehicleSku.battery_type == battery_type)

@@ -1,11 +1,33 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { logout } from "@/lib/auth";
 import SearchBar from "@/components/common/SearchBar";
 
 export default function Navbar() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, clearUser } = useAuth();
+  const router = useRouter();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    clearUser();
+    router.push("/");
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/80 backdrop-blur-md">
@@ -56,9 +78,46 @@ export default function Navbar() {
               >
                 发帖
               </Link>
-              <span className="hidden text-sm text-muted sm:block">
-                {user?.nickname || user?.username}
-              </span>
+              <div ref={menuRef} className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted hover:text-foreground hover:bg-background transition-colors sm:flex"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                    {(user?.nickname || user?.username || "U")[0]}
+                  </span>
+                  <span>{user?.nickname || user?.username}</span>
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-border bg-surface shadow-lg py-1">
+                    <div className="px-3 py-2 border-b border-border">
+                      <div className="text-sm font-medium">{user?.nickname || user?.username}</div>
+                      <div className="text-xs text-muted">{user?.email}</div>
+                    </div>
+                    {(user?.role === "admin" || user?.role === "editor") && (
+                      <Link
+                        href="/admin/dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-3 py-2 text-sm hover:bg-background transition-colors"
+                      >
+                        管理后台
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm text-danger hover:bg-background transition-colors"
+                    >
+                      退出登录
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>

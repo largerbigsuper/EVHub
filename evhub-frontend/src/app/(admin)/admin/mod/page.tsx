@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import apiClient from "@/lib/api";
+import Pagination from "@/components/common/Pagination";
 import type { PageResponse, AdminModBuildItem, ModBuildDetail } from "@/types/api";
 
 const TABS = [
@@ -31,6 +32,7 @@ export default function AdminModPage() {
   const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0, total_pages: 0 });
   const [tab, setTab] = useState("");
   const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
   const [illegalCount, setIllegalCount] = useState(0);
   const [rejectId, setRejectId] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export default function AdminModPage() {
     try {
       const params: Record<string, unknown> = { page, page_size: 20 };
       if (tab) params.status = tab;
+      if (keyword.trim()) params.keyword = keyword.trim();
       const res = await apiClient.get<PageResponse<AdminModBuildItem>>("/admin/mod/builds", { params });
       const data = res.data.data || [];
       setBuilds(data);
@@ -55,7 +58,7 @@ export default function AdminModPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab, page]);
+  }, [tab, page, keyword]);
 
   const fetchPendingCount = useCallback(async () => {
     try {
@@ -136,6 +139,22 @@ export default function AdminModPage() {
           <h1 className="text-2xl font-bold">改装管理</h1>
           <Link href="/admin" className="text-sm text-primary hover:underline">← 返回管理后台</Link>
         </div>
+      </div>
+
+      {/* Search */}
+      <div className="mb-4 flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="搜索方案标题/描述..."
+          value={keyword}
+          onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+          className="w-64 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        />
+        {keyword && (
+          <button onClick={() => { setKeyword(""); setPage(1); }} className="text-sm text-muted hover:text-foreground">
+            清除
+          </button>
+        )}
       </div>
 
       <div className="mb-4 flex gap-1 border-b border-border">
@@ -298,39 +317,11 @@ export default function AdminModPage() {
           </div>
 
           {meta.total_pages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="rounded px-3 py-1.5 text-sm border border-border hover:bg-background disabled:opacity-40"
-              >
-                上一页
-              </button>
-              {Array.from({ length: meta.total_pages }, (_, i) => i + 1)
-                .filter((p) => p === 1 || p === meta.total_pages || Math.abs(p - page) <= 1)
-                .map((p, idx, arr) => (
-                  <span key={p}>
-                    {idx > 0 && arr[idx - 1] !== p - 1 && (
-                      <span className="px-1 text-muted">...</span>
-                    )}
-                    <button
-                      onClick={() => setPage(p)}
-                      className={`rounded px-3 py-1.5 text-sm ${
-                        p === page ? "bg-primary text-white" : "border border-border hover:bg-background"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  </span>
-                ))}
-              <button
-                onClick={() => setPage((p) => Math.min(meta.total_pages, p + 1))}
-                disabled={page >= meta.total_pages}
-                className="rounded px-3 py-1.5 text-sm border border-border hover:bg-background disabled:opacity-40"
-              >
-                下一页
-              </button>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={meta.total_pages}
+              onPageChange={setPage}
+            />
           )}
         </>
       )}

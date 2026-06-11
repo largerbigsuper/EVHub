@@ -2,6 +2,7 @@ import uuid
 from pydantic import BaseModel, Field
 
 from app.core.response import BaseResponse, PageResponse
+from app.schemas.base import ORMSchema
 
 
 # ---- Request Schemas ----
@@ -52,7 +53,7 @@ class ModRejectRequest(BaseModel):
 
 # ---- Response Data Schemas ----
 
-class ModPartItem(BaseModel):
+class ModPartItem(ORMSchema):
     id: str
     name: str
     brand: str | None = None
@@ -62,29 +63,20 @@ class ModPartItem(BaseModel):
     quantity: int = 1
     notes: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class AuthorInfo(BaseModel):
+class AuthorInfo(ORMSchema):
     id: str
     username: str
     nickname: str | None = None
     avatar: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class VehicleSkuRef(BaseModel):
+class VehicleSkuRef(ORMSchema):
     id: str
     name: str
 
-    class Config:
-        from_attributes = True
 
-
-class ModBuildItem(BaseModel):
+class ModBuildItem(ORMSchema):
     id: str
     title: str
     slug: str
@@ -101,9 +93,6 @@ class ModBuildItem(BaseModel):
     published_at: str | None = None
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
-
 
 class ModBuildDetail(ModBuildItem):
     content: str
@@ -111,17 +100,11 @@ class ModBuildDetail(ModBuildItem):
     parts: list[ModPartItem] = []
     rejected_reason: str | None = None
 
-    class Config:
-        from_attributes = True
-
 
 class AdminModBuildItem(ModBuildItem):
     status: str
     rejected_reason: str | None = None
     legal_note: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 # ---- Response Models ----

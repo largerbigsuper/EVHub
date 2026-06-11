@@ -1,9 +1,9 @@
 import uuid
-from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.core.response import BaseResponse, PageResponse, PageMeta
+from app.core.response import BaseResponse, PageResponse
+from app.schemas.base import ORMSchema
 
 
 # ---- Request Schemas ----
@@ -58,7 +58,7 @@ class CategoryUpdate(BaseModel):
 
 # ---- Response Data Schemas ----
 
-class CategoryItem(BaseModel):
+class CategoryItem(ORMSchema):
     id: str
     name: str
     slug: str
@@ -66,23 +66,16 @@ class CategoryItem(BaseModel):
     icon: str | None = None
     sort_order: int = 0
     article_count: int = 0
-    children: list["CategoryItem"] | None = None
-
-    class Config:
-        from_attributes = True
 
 
-class AuthorInfo(BaseModel):
+class AuthorInfo(ORMSchema):
     id: str
     username: str
     nickname: str | None = None
     avatar: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class ArticleItem(BaseModel):
+class ArticleItem(ORMSchema):
     id: str
     title: str
     slug: str
@@ -98,11 +91,8 @@ class ArticleItem(BaseModel):
     published_at: str | None = None
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class ArticleDetail(BaseModel):
+class ArticleDetail(ORMSchema):
     id: str
     title: str
     slug: str
@@ -120,11 +110,8 @@ class ArticleDetail(BaseModel):
     published_at: str | None = None
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class AdminArticleItem(BaseModel):
+class AdminArticleItem(ORMSchema):
     id: str
     title: str
     slug: str
@@ -141,11 +128,8 @@ class AdminArticleItem(BaseModel):
     created_at: str | None = None
     updated_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class AdminArticleDetail(BaseModel):
+class AdminArticleDetail(ORMSchema):
     id: str
     title: str
     slug: str
@@ -165,9 +149,6 @@ class AdminArticleDetail(BaseModel):
     published_at: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 # ---- Response Models ----

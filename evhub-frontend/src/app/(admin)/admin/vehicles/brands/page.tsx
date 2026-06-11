@@ -4,23 +4,29 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
+import ImageUpload from "@/components/common/ImageUpload";
+import PreviewModal from "@/components/common/PreviewModal";
 import type { BaseResponse, BrandItem } from "@/types/api";
 
 export default function AdminBrandsPage() {
   const router = useRouter();
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [keyword, setKeyword] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", slug: "", logo: "", country: "", founded_year: "", website: "", description: "", is_featured: false, sort_order: 0 });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const fetchBrands = useCallback(async () => {
-    const res = await apiClient.get<BaseResponse<BrandItem[]>>("/brands");
+    const params: Record<string, string> = {};
+    if (keyword.trim()) params.keyword = keyword.trim();
+    const res = await apiClient.get<BaseResponse<BrandItem[]>>("/brands", { params });
     setBrands(res.data.data || []);
     setLoading(false);
-  }, []);
+  }, [keyword]);
 
   useEffect(() => { fetchBrands(); }, [fetchBrands]);
 
@@ -103,6 +109,19 @@ export default function AdminBrandsPage() {
         </button>
       </div>
 
+      <div className="mb-4 flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="搜索品牌名称/标识/国家..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          className="w-64 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        />
+        {keyword && (
+          <button onClick={() => setKeyword("")} className="text-sm text-muted hover:text-foreground">清除</button>
+        )}
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-background">
@@ -123,7 +142,11 @@ export default function AdminBrandsPage() {
                     {b.logo ? <img src={b.logo} alt="" className="h-full w-full rounded object-contain" /> : b.name.charAt(0)}
                   </div>
                 </td>
-                <td className="px-4 py-3 font-medium">{b.name}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link href={`/admin/vehicles/brands/${b.id}`} className="text-primary hover:underline">
+                    {b.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-3 font-mono text-xs text-muted">{b.slug}</td>
                 <td className="px-4 py-3 text-muted">{b.country || "-"}</td>
                 <td className="px-4 py-3">{b.series_count}</td>
@@ -161,9 +184,12 @@ export default function AdminBrandsPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-sm text-muted">Logo URL</label>
-                <input value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })}
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+                <label className="mb-1 block text-sm text-muted">Logo</label>
+                <ImageUpload
+                  value={form.logo}
+                  onChange={(url) => setForm({ ...form, logo: url })}
+                  folder="brands"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -200,6 +226,9 @@ export default function AdminBrandsPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setPreviewOpen(true)} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background">
+                  预览
+                </button>
                 <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background">
                   取消
                 </button>
@@ -212,6 +241,20 @@ export default function AdminBrandsPage() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        type="brand"
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        data={{
+          name: form.name,
+          logo: form.logo,
+          country: form.country,
+          founded_year: form.founded_year,
+          website: form.website,
+          description: form.description,
+        }}
+      />
     </div>
   );
 }

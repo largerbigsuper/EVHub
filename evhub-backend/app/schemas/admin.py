@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.core.response import BaseResponse, PageMeta, PageResponse
+from app.schemas.base import ORMSchema
 
 
 class UserListQuery(BaseModel):
@@ -34,7 +35,7 @@ class RolePermissionsUpdate(BaseModel):
     permission_ids: list[str]
 
 
-class AdminUserItem(BaseModel):
+class AdminUserItem(ORMSchema):
     id: str
     username: str
     nickname: str | None = None
@@ -44,29 +45,20 @@ class AdminUserItem(BaseModel):
     status: int = 1
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class RoleItem(BaseModel):
+class RoleItem(ORMSchema):
     id: str
     name: str
     code: str
     description: str | None = None
     created_at: str | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class PermissionItem(BaseModel):
+class PermissionItem(ORMSchema):
     id: str
     name: str
     code: str
     description: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class RoleDetail(RoleItem):

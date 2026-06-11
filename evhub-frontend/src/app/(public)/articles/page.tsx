@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { TagLinks } from "./TagLinks";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -162,16 +163,7 @@ export default async function ArticlesPage({
                   <span>{a.view_count} 次阅读</span>
                   {a.tags && a.tags.length > 0 && (
                     <div className="flex gap-1">
-                      {a.tags.slice(0, 2).map((t) => (
-                        <Link
-                          key={t}
-                          href={`/articles?tag=${t}`}
-                          className="rounded border border-border px-1.5 py-0.5 hover:border-primary hover:text-primary"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {t}
-                        </Link>
-                      ))}
+                      <TagLinks tags={a.tags.slice(0, 2)} />
                     </div>
                   )}
                 </div>

@@ -47,5 +47,5 @@ class Article(Base, TimestampMixin, SoftDeleteMixin):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="发布时间")
     rejected_reason: Mapped[str | None] = mapped_column(Text, comment="拒绝原因（审核拒绝时必填）")
 
-    category: Mapped["Category | None"] = relationship(back_populates="articles")
-    author: Mapped["User"] = relationship("User", foreign_keys=[author_id])
+    category: Mapped["Category | None"] = relationship(back_populates="articles", lazy="selectin")
+    author: Mapped["User"] = relationship("User", foreign_keys=[author_id], lazy="selectin")

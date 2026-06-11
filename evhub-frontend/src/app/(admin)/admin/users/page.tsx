@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api";
+import Pagination from "@/components/common/Pagination";
 import type { BaseResponse, PageResponse } from "@/types/api";
 
 interface UserItem {
@@ -48,11 +49,11 @@ export default function AdminUsersPage() {
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["admin", "users", page, search],
     queryFn: async () => {
-      const { data } = await apiClient.get<BaseResponse<{ data: UserItem[]; meta: PageMeta }>>(
+      const { data } = await apiClient.get<{ data: UserItem[]; meta: PageMeta }>(
         "/admin/users",
         { params: { page, page_size: 20, search: search || undefined } }
       );
-      return data.data;
+      return data;
     },
   });
 
@@ -261,26 +262,15 @@ function UsersTab({
       </div>
 
       {usersData?.meta && (
-        <div className="mt-4 flex items-center justify-between text-sm text-muted">
-          <span>
-            共 {usersData.meta.total} 条，第 {usersData.meta.page} / {usersData.meta.total_pages} 页
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <span className="text-sm text-muted">
+            共 {usersData.meta.total} 条
           </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage(page - 1)}
-              disabled={page <= 1}
-              className="rounded border border-border px-3 py-1 transition-colors hover:bg-background disabled:opacity-50"
-            >
-              上一页
-            </button>
-            <button
-              onClick={() => setPage(page + 1)}
-              disabled={page >= usersData.meta.total_pages}
-              className="rounded border border-border px-3 py-1 transition-colors hover:bg-background disabled:opacity-50"
-            >
-              下一页
-            </button>
-          </div>
+          <Pagination
+            page={page}
+            totalPages={usersData.meta.total_pages}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

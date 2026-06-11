@@ -23,7 +23,7 @@ class CommunityService:
     async def create_topic(self, data: dict, user_id: str) -> Topic:
         data["author_id"] = uuid.UUID(user_id)
         topic = await self.topic_repo.create(**data)
-        return topic
+        return await self.topic_repo.get_by_id(topic.id)
 
     async def get_topic(self, topic_id: uuid.UUID) -> Topic:
         topic = await self.topic_repo.get_by_id(topic_id)
@@ -76,6 +76,8 @@ class CommunityService:
 
         if target_type == "topic":
             await self.topic_repo.update_last_reply(target_id)
+
+        comment = await self.comment_repo.get_by_id(comment.id)
 
         # Send notification
         notified_user_id = None
