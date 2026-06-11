@@ -1,13 +1,18 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from typing import Optional
 
 from app.api.v1.router import router as v1_router
 from app.config import get_settings
+from app.core.logging import setup_logging
+
+setup_logging()
+
+settings = get_settings()
 from app.core.database import engine, init_db, dispose_engine
 from app.core.redis import redis_pool
 from sqlalchemy import text
@@ -22,8 +27,6 @@ from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.services.seo_service import generate_sitemap
 import app.models
-
-settings = get_settings()
 
 
 @asynccontextmanager
@@ -57,7 +60,6 @@ app.add_middleware(RateLimitMiddleware)
 
 app.include_router(v1_router, prefix="/api/v1")
 
-import os
 from app.services.storage.local import UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/media", StaticFiles(directory=str(UPLOAD_DIR)), name="media")

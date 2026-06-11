@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     SMTP_PASS: str = ""
 
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     APP_URL: str = ""
     APP_PORT: int = 8000
