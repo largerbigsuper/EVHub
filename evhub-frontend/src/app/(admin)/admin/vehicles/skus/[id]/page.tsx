@@ -6,11 +6,13 @@ import Link from "next/link";
 import apiClient from "@/lib/api";
 import ImageUpload from "@/components/common/ImageUpload";
 import PreviewModal from "@/components/common/PreviewModal";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, SkuDetailItem, BrandItem, SeriesItem } from "@/types/api";
 
 export default function AdminSkuDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [sku, setSku] = useState<SkuDetailItem | null>(null);
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [seriesList, setSeriesList] = useState<SeriesItem[]>([]);
@@ -18,7 +20,6 @@ export default function AdminSkuDetailPage() {
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -98,7 +99,6 @@ export default function AdminSkuDetailPage() {
   async function handleSave() {
     setSaving(true);
     setError("");
-    setSuccess("");
     try {
       await apiClient.put(`/admin/skus/${id}`, {
         name: form.name,
@@ -118,7 +118,7 @@ export default function AdminSkuDetailPage() {
         tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
         is_featured: form.is_featured,
       });
-      setSuccess("保存成功");
+      toast("保存成功", "success");
     } catch (err: any) {
       setError(err.response?.data?.message || "保存失败");
     } finally {
@@ -157,10 +157,7 @@ export default function AdminSkuDetailPage() {
         <h1 className="mb-6 text-lg font-semibold">编辑车型 - {sku.name}</h1>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{error}</div>
-        )}
-        {success && (
-          <div className="mb-4 rounded-lg bg-green-100 px-3 py-2 text-sm text-green-700">{success}</div>
+          <div className="mb-4 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-700">{error}</div>
         )}
 
         <div className="space-y-4">

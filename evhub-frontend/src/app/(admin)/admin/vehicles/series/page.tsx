@@ -5,9 +5,11 @@ import Link from "next/link";
 import apiClient from "@/lib/api";
 import ImageUpload from "@/components/common/ImageUpload";
 import PreviewModal from "@/components/common/PreviewModal";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, BrandItem, SeriesItem } from "@/types/api";
 
 export default function AdminSeriesPage() {
+  const { toast } = useToast();
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [series, setSeries] = useState<SeriesItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,7 @@ export default function AdminSeriesPage() {
       } else {
         await apiClient.post("/admin/series", form);
       }
+      toast(editId ? "保存成功" : "创建成功", "success");
       setShowForm(false);
       await fetchData();
     } catch (err: unknown) {
@@ -78,9 +81,10 @@ export default function AdminSeriesPage() {
     if (!confirm(`确定删除车系「${name}」？`)) return;
     try {
       await apiClient.delete(`/admin/series/${id}`);
+      toast("删除成功", "success");
       await fetchData();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 

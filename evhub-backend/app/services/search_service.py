@@ -81,6 +81,11 @@ class PgSearchService(SearchServiceInterface):
     def _rank(self, field: str) -> str:
         return _sql_rank_order(field, self._dialect_name)
 
+    def _bind_search_params(self, like_pattern: str, q: str) -> dict:
+        if self._dialect_name == "sqlite":
+            return {"q1": like_pattern, "q2": like_pattern}
+        return {"q1": like_pattern, "q3": q}
+
     def _build_search_condition(self, *fields: str, like_var: str = "q1") -> str:
         parts = [self._like(f) for f in fields]
         return " OR ".join(parts)
@@ -123,7 +128,7 @@ class PgSearchService(SearchServiceInterface):
                 .where(
                     Article.deleted_at.is_(None),
                     Article.status == "published",
-                    text(article_cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                    text(article_cond).bindparams(**self._bind_search_params(like_pattern, q)),
                 )
                 .order_by(text(rank_clause).bindparams(q1=like_pattern, q2=like_pattern))
                 .limit(page_size)
@@ -154,13 +159,13 @@ class PgSearchService(SearchServiceInterface):
                     VehicleSku.name.label("name"),
                     VehicleSeries.name.label("series_name"),
                     Brand.name.label("brand_name"),
-                    func.concat("/vehicles/", VehicleSku.id).label("url"),
+                    func.concat("/vehicles/", VehicleSku.slug).label("url"),
                 )
                 .join(VehicleSeries, VehicleSku.series_id == VehicleSeries.id)
                 .join(Brand, VehicleSeries.brand_id == Brand.id)
                 .where(
                     VehicleSku.deleted_at.is_(None),
-                    text(v_cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                    text(v_cond).bindparams(**self._bind_search_params(like_pattern, q)),
                 )
                 .order_by(text(self._rank("vehicle_skus.name")).bindparams(q1=like_pattern))
                 .limit(page_size)
@@ -197,7 +202,7 @@ class PgSearchService(SearchServiceInterface):
                 )
                 .where(
                     Brand.deleted_at.is_(None),
-                    text(b_cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                    text(b_cond).bindparams(**self._bind_search_params(like_pattern, q)),
                 )
                 .limit(page_size)
                 .offset(offset)
@@ -279,7 +284,7 @@ class PgSearchService(SearchServiceInterface):
             .where(
                 Article.deleted_at.is_(None),
                 Article.status == "published",
-                text(cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                text(cond).bindparams(**self._bind_search_params(like_pattern, q)),
             )
         )
         result = await self.db.execute(stmt)
@@ -299,7 +304,7 @@ class PgSearchService(SearchServiceInterface):
             .join(Brand, VehicleSeries.brand_id == Brand.id)
             .where(
                 VehicleSku.deleted_at.is_(None),
-                text(cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                text(cond).bindparams(**self._bind_search_params(like_pattern, q)),
             )
         )
         result = await self.db.execute(stmt)
@@ -316,7 +321,7 @@ class PgSearchService(SearchServiceInterface):
             .select_from(Brand)
             .where(
                 Brand.deleted_at.is_(None),
-                text(cond).bindparams(q1=like_pattern, q2=like_pattern, q3=q),
+                text(cond).bindparams(**self._bind_search_params(like_pattern, q)),
             )
         )
         result = await self.db.execute(stmt)

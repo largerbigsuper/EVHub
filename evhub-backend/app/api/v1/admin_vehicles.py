@@ -28,6 +28,7 @@ from app.schemas.vehicle import (
     VehicleMessageResp,
 )
 from app.services.vehicle_service import VehicleService
+from app.repositories.vehicle_repo import VehicleSkuRepository
 
 router = APIRouter(prefix="/admin", tags=["管理员"])
 
@@ -131,7 +132,6 @@ async def get_sku(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.repositories.vehicle_repo import VehicleSkuRepository
     repo = VehicleSkuRepository(db)
     sku = await repo.get_by_id(uuid.UUID(sku_id))
     if not sku:

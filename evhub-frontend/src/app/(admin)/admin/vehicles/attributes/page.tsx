@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import apiClient from "@/lib/api";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, AttributeGroupDetail, AttributeDefinitionItem } from "@/types/api";
 
 export default function AdminAttributesPage() {
+  const { toast } = useToast();
   const [groups, setGroups] = useState<AttributeGroupDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -37,9 +39,10 @@ export default function AdminAttributesPage() {
       } else {
         await apiClient.post("/admin/attributes/groups", { name, code, sort_order: sortOrder });
       }
+      toast(group ? "保存成功" : "创建成功", "success");
       await fetchGroups();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "保存失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "保存失败", "error");
     }
   };
 
@@ -47,9 +50,10 @@ export default function AdminAttributesPage() {
     if (!confirm(`确定删除属性组「${name}」及其下所有属性定义？`)) return;
     try {
       await apiClient.delete(`/admin/attributes/groups/${id}`);
+      toast("删除成功", "success");
       await fetchGroups();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 
@@ -63,9 +67,10 @@ export default function AdminAttributesPage() {
       } else {
         await apiClient.post(`/admin/attributes/definitions`, { ...data, group_id: groupId });
       }
+      toast(def ? "保存成功" : "创建成功", "success");
       await fetchGroups();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "保存失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "保存失败", "error");
     }
   };
 
@@ -73,9 +78,10 @@ export default function AdminAttributesPage() {
     if (!confirm(`确定删除属性「${name}」？`)) return;
     try {
       await apiClient.delete(`/admin/attributes/definitions/${id}`);
+      toast("删除成功", "success");
       await fetchGroups();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 

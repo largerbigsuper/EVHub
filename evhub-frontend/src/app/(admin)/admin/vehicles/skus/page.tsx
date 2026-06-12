@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
 import Pagination from "@/components/common/Pagination";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, PageResponse, BrandItem, SkuSimpleItem } from "@/types/api";
 
 export default function AdminSkusPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const [skus, setSkus] = useState<SkuSimpleItem[]>([]);
   const [brands, setBrands] = useState<BrandItem[]>([]);
@@ -62,9 +64,10 @@ export default function AdminSkusPage() {
     if (!confirm(`确定删除 SKU「${name}」？`)) return;
     try {
       await apiClient.delete(`/admin/skus/${id}`);
+      toast("删除成功", "success");
       await fetchSkus();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 

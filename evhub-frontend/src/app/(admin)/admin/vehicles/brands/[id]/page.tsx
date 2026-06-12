@@ -6,11 +6,13 @@ import Link from "next/link";
 import apiClient from "@/lib/api";
 import ImageUpload from "@/components/common/ImageUpload";
 import PreviewModal from "@/components/common/PreviewModal";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, BrandItem } from "@/types/api";
 
 export default function BrandEditPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [brand, setBrand] = useState<BrandItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,6 +69,7 @@ export default function BrandEditPage() {
         sort_order: form.sort_order,
       };
       await apiClient.put(`/admin/brands/${id}`, payload);
+      toast("保存成功", "success");
       router.push("/admin/vehicles/brands");
     } catch {
       setError("保存失败");
@@ -79,6 +82,7 @@ export default function BrandEditPage() {
     if (!confirm("确定要删除此品牌吗？")) return;
     try {
       await apiClient.delete(`/admin/brands/${id}`);
+      toast("删除成功", "success");
       router.push("/admin/vehicles/brands");
     } catch {
       setError("删除失败");

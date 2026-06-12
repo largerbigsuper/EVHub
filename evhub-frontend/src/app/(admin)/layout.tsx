@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { logout } from "@/lib/auth";
+import { ToastProvider } from "@/components/common/Toast";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "仪表盘", icon: "📊" },
@@ -213,7 +214,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6">
+          <ToastProvider>{children}</ToastProvider>
+        </main>
       </div>
     </div>
   );

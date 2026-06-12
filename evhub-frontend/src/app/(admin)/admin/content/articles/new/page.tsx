@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import apiClient from "@/lib/api";
 import ImageUpload from "@/components/common/ImageUpload";
 import PreviewModal from "@/components/common/PreviewModal";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, ArticleDetail, CategoryItem } from "@/types/api";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
@@ -27,6 +28,7 @@ function slugify(text: string): string {
 
 export default function ArticleEditorPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const params = useParams();
   const articleId = params?.id as string | undefined;
   const isEdit = !!articleId;
@@ -149,8 +151,12 @@ export default function ArticleEditorPage() {
 
         if (action === "submit") {
           await apiClient.post(`/admin/articles/${articleId}/submit`);
+          toast("提交审核成功", "success");
         } else if (action === "publish") {
           await apiClient.post(`/admin/articles/${articleId}/publish`);
+          toast("发布成功", "success");
+        } else {
+          toast("保存成功", "success");
         }
       } else {
         const res = await apiClient.post<BaseResponse<ArticleDetail>>("/admin/articles", payload);
@@ -159,12 +165,15 @@ export default function ArticleEditorPage() {
         if (newId) {
           if (action === "submit") {
             await apiClient.post(`/admin/articles/${newId}/submit`);
+            toast("提交审核成功", "success");
           } else if (action === "publish") {
             await apiClient.post(`/admin/articles/${newId}/publish`);
+            toast("发布成功", "success");
           }
           router.push(`/admin/content/articles/${newId}/edit`);
           return;
         }
+        toast("创建成功", "success");
       }
 
       if (action !== "save") {

@@ -127,7 +127,7 @@ export default function SearchBar() {
               <div className="px-2 py-1 text-xs text-muted">搜索建议</div>
               {suggestions.map((s, idx) => (
                 <button
-                  key={s}
+                  key={`${s}-${idx}`}
                   onClick={() => handleSearch(s)}
                   onMouseEnter={() => setSelectedIdx(idx)}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-left transition-colors ${
@@ -151,8 +151,12 @@ export default function SearchBar() {
               {hotKeywords.length > 0 ? (
                 hotKeywords.map((kw, idx) => (
                   <button
-                    key={kw.keyword}
-                    onClick={() => handleSearch(kw.keyword)}
+                    key={`${kw.keyword}-${idx}`}
+                    onClick={() => {
+                    setQuery(kw.keyword);
+                    setShowDropdown(false);
+                    inputRef.current?.focus();
+                  }}
                     onMouseEnter={() => setSelectedIdx(idx)}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
                       idx === selectedIdx ? "bg-primary/10 text-primary" : "hover:bg-background"

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import apiClient from "@/lib/api";
 import Pagination from "@/components/common/Pagination";
+import { useToast } from "@/components/common/Toast";
 import type { PageResponse, AdminModBuildItem, ModBuildDetail } from "@/types/api";
 
 const TABS = [
@@ -27,6 +28,7 @@ const DIFFICULTY_MAP: Record<string, string> = {
 };
 
 export default function AdminModPage() {
+  const { toast } = useToast();
   const [builds, setBuilds] = useState<AdminModBuildItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0, total_pages: 0 });
@@ -96,10 +98,11 @@ export default function AdminModPage() {
     setActionLoading(true);
     try {
       await apiClient.post(`/admin/mod/builds/${id}/publish`);
+      toast("发布成功", "success");
       fetchBuilds();
       fetchPendingCount();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败", "error");
     } finally {
       setActionLoading(false);
     }
@@ -110,13 +113,14 @@ export default function AdminModPage() {
     setActionLoading(true);
     try {
       await apiClient.post(`/admin/mod/builds/${rejectId}/reject`, { reason: rejectReason.trim() });
+      toast("已拒绝", "success");
       setRejectId(null);
       setRejectReason("");
       closeDetail();
       fetchBuilds();
       fetchPendingCount();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败", "error");
     } finally {
       setActionLoading(false);
     }
@@ -126,9 +130,10 @@ export default function AdminModPage() {
     if (!confirm(`确定删除方案「${title}」？`)) return;
     try {
       await apiClient.delete(`/admin/mod/builds/${id}`);
+      toast("删除成功", "success");
       fetchBuilds();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 

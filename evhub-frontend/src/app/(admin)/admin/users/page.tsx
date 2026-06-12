@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api";
 import Pagination from "@/components/common/Pagination";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, PageResponse } from "@/types/api";
 
 interface UserItem {
@@ -36,6 +37,7 @@ interface PermissionItem {
 }
 
 export default function AdminUsersPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -64,6 +66,7 @@ export default function AdminUsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       setConfirmAction(null);
+      toast("操作成功", "success");
     },
   });
 
@@ -73,6 +76,7 @@ export default function AdminUsersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast("角色更新成功", "success");
     },
   });
 
@@ -313,6 +317,7 @@ function UsersTab({
 }
 
 function RolesTab() {
+  const { toast } = useToast();
   const [editingRole, setEditingRole] = useState<RoleItem | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
@@ -332,6 +337,7 @@ function RolesTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "roles"] });
+      toast("删除成功", "success");
     },
   });
 
@@ -460,6 +466,7 @@ function RoleFormModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { toast } = useToast();
   const [name, setName] = useState(role?.name || "");
   const [code, setCode] = useState(role?.code || "");
   const [description, setDescription] = useState(role?.description || "");
@@ -474,7 +481,10 @@ function RoleFormModal({
         await apiClient.post("/admin/roles", payload);
       }
     },
-    onSuccess,
+    onSuccess: () => {
+      toast(role ? "保存成功" : "创建成功", "success");
+      onSuccess();
+    },
     onError: (err: any) => {
       setError(err.response?.data?.message || "操作失败");
     },
@@ -547,6 +557,7 @@ function PermissionsModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { toast } = useToast();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: allPermissions, isLoading } = useQuery({
@@ -580,7 +591,10 @@ function PermissionsModal({
         permission_ids: Array.from(selectedIds),
       });
     },
-    onSuccess,
+    onSuccess: () => {
+      toast("权限更新成功", "success");
+      onSuccess();
+    },
   });
 
   const grouped = (allPermissions || []).reduce(

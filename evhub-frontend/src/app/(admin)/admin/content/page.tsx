@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import apiClient from "@/lib/api";
 import Pagination from "@/components/common/Pagination";
+import { useToast } from "@/components/common/Toast";
 import type { PageResponse, ArticleItem, ArticleDetail } from "@/types/api";
 
 const TABS = [
@@ -22,6 +23,7 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
 };
 
 export default function AdminContentListPage() {
+  const { toast } = useToast();
   const [articles, setArticles] = useState<ArticleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0, total_pages: 0 });
@@ -74,10 +76,11 @@ export default function AdminContentListPage() {
     setActionLoading(true);
     try {
       await apiClient.post(`/admin/articles/${id}/publish`);
+      toast("发布成功", "success");
       fetchArticles();
       fetchPendingCount();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败", "error");
     } finally {
       setActionLoading(false);
     }
@@ -88,12 +91,13 @@ export default function AdminContentListPage() {
     setActionLoading(true);
     try {
       await apiClient.post(`/admin/articles/${rejectId}/reject`, { reason: rejectReason.trim() });
+      toast("已拒绝", "success");
       setRejectId(null);
       setRejectReason("");
       fetchArticles();
       fetchPendingCount();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "操作失败", "error");
     } finally {
       setActionLoading(false);
     }
@@ -108,9 +112,10 @@ export default function AdminContentListPage() {
     if (!confirm(`确定删除文章「${title}」？`)) return;
     try {
       await apiClient.delete(`/admin/articles/${id}`);
+      toast("删除成功", "success");
       fetchArticles();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 

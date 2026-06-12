@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
 import ImageUpload from "@/components/common/ImageUpload";
 import PreviewModal from "@/components/common/PreviewModal";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, BrandItem } from "@/types/api";
 
 export default function AdminBrandsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
@@ -63,6 +65,7 @@ export default function AdminBrandsPage() {
       } else {
         await apiClient.post("/admin/brands", payload);
       }
+      toast(editId ? "保存成功" : "创建成功", "success");
       setShowForm(false);
       await fetchBrands();
     } catch (err: unknown) {
@@ -77,10 +80,11 @@ export default function AdminBrandsPage() {
     if (!confirm(`确定删除品牌「${name}」？`)) return;
     try {
       await apiClient.delete(`/admin/brands/${id}`);
+      toast("删除成功", "success");
       await fetchBrands();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(msg || "删除失败");
+      toast(msg || "删除失败", "error");
     }
   };
 

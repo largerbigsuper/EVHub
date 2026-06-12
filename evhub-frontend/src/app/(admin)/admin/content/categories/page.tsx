@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
+import { useToast } from "@/components/common/Toast";
 import type { BaseResponse, CategoryItem } from "@/types/api";
 
 interface FlatCategory {
@@ -34,6 +35,7 @@ function flattenTree(cats: CategoryItem[], depth = 0): FlatCategory[] {
 
 export default function AdminCategoriesPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [categories, setCategories] = useState<FlatCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -94,6 +96,7 @@ export default function AdminCategoriesPage() {
       } else {
         await apiClient.post("/admin/categories", payload);
       }
+      toast(editId ? "保存成功" : "创建成功", "success");
       setShowForm(false);
       setLoading(true);
       await fetchCategories();
@@ -108,9 +111,10 @@ export default function AdminCategoriesPage() {
     if (!confirm(`确定删除分类「${name}」？\n该分类下的文章将不会受到影响。`)) return;
     try {
       await apiClient.delete(`/admin/categories/${id}`);
+      toast("删除成功", "success");
       await fetchCategories();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败");
+      toast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "删除失败", "error");
     }
   };
 
